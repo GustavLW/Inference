@@ -2,10 +2,10 @@ clc
 clear all
 clf
 close all
-load dataset_20221115_1720
+load dataset_20221115_1229
 
-theta = [0.000075 4];
-%theta = [0 4];
+%theta = [0.000075 4];
+theta = [0 4];
 sig   = 0.01;
 
 
@@ -42,7 +42,19 @@ for c = 1:5
         end
     end
 end
-
+%%
+clf
+sigma0 = 1/sig^2;
+a = 100;
+b = sigma0/a;
+x = linspace(0.0/sigma0,5*sigma0;
+F1 = @(x) abs(gamcdf(x,a,b) - heaviside(x-sigma0));
+%plot(x,F1(x))
+plot(x,gamcdf(x,a,b))
+hold on
+plot(x,heaviside(x-sigma0))
+axis([0 max(x) 0 1.1])
+W = integral(F1,0,inf)
 %%
 W1 = zeros(N,5);
 W2 = zeros(N,5);
@@ -116,7 +128,7 @@ plot(r,y,'r')
 xlabel('log_{10}')
 hold on
 ylabel('Smoothed histogram')
-plot(r,y1,'b')
+plot(r,y1,'b--')
 axis([r(1) r(end) -10 1.1*max(max(y),max(y1))])
 %plot([-3 -3],[-10 810],'k--')
 plot(log10([sig sig]),[-10 1.1*max(max(y),max(y1))],'k--')

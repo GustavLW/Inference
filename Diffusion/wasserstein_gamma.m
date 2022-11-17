@@ -12,6 +12,6 @@ W   = norm((1/sig)^2-tau)^2 + sum(1./h);
 W   = sqrt(W);
 
 elseif size(a,1) == 1 % we can use gamma directly under this assumption
-W   = integral(@(x) abs(gamcdf(x,a,1/b)-heaviside(x-(1/sig)^2)),0.5*(1/sig)^2,2*(1/sig)^2);
+W   = integral(@(x) abs(gamcdf(x,a,b/(a^2))-heaviside(x-(sig)^2)),0,2*sig^2);
 
 end

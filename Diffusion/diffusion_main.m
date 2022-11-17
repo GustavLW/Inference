@@ -9,68 +9,77 @@ DataFolder = [SimFolder '\Datasets'];
 addpath(([SimFolder, filesep]))
 df = dir(DataFolder);
 df = df(3:end);
+td = [1 2 5 7 10 15 20 30];
 
-dataset = 5;
-if strcmp(df(2*dataset-1).name(1:13),df(2*dataset).name(1:13)) == 1
-load([DataFolder '\' df(2*dataset-1).name])
-load([DataFolder '\' df(2*dataset).name])
-else
-    disp('Something is off')
-    dataset = dataset + 0.5;
+doff = 0;
+for dataset = 1:length(df)/2
+    d = dataset + doff;
+    if strcmp(df(2*d-1).name(1:13),df(2*d).name(1:13)) == 1
+        load([DataFolder '\' df(2*dataset-1).name])
+        load([DataFolder '\' df(2*dataset).name])
+
+        base_dt = observed_cells{end}(1);
+        sig     = observed_cells{end}(end);
+
+        [alpha,beta,betaMSD,betaIMP] = diffusion_inference(observed_cells,observed_neighbours,td);
+        h = figure('units','normalized','outerposition',[0 0 1 1],'visible','off');
+        % MF posterior
+        alpha_grand = sum(alpha,1);
+        beta_grand = sum(beta,1);
+        betaMSD_grand = sum(betaMSD,1);
+        betaIMP_grand = sum(betaIMP,1);
+
+        r = linspace((sig)^(-2)*0.5,(sig)^(-2)*5,1001);
+        for c = 1:length(td)
+            a  = alpha_grand(c);
+            b  = 1./beta_grand(c);
+            bM = 1./betaMSD_grand(c);
+            bI = 1./betaIMP_grand(c);
+
+            p = flip(1./r);
+            y = gampdf(p,a,1/(a^2*b));
+            z = gampdf(p,a,1/(a^2*bM));
+            w = gampdf(p,a,1/(a^2*bI));
+            M = [max(y) max(z) max(w)];
+            subplot(5,2,c)
+            plot(p,y,'r')
+            hold on
+            plot(p,z,'b')
+            plot(p,w,'g')
+            plot([1 1]*(sig)^(2),[-0.1 1.1]*max(M),'k--')
+            axis([p(1) p(end) [-0.1 1.1]*max(M)])
+            xlabel('\sigma^{2}')
+            ylabel('Probability')
+            title(['MF assumption. Minutes between observations: ' num2str(base_dt/60*td(c))])
+        end
+        W1 = zeros(size(td,2),1);
+        W2 = zeros(size(td,2),1);
+        W3 = zeros(size(td,2),1);
+        min_track_length = 1;
+        for c = 1:length(td)
+            W1(c) = wasserstein_gamma(alpha_grand(c),beta_grand(c),sig,min_track_length);
+            W2(c) = wasserstein_gamma(alpha_grand(c),betaMSD_grand(c),sig,min_track_length);
+            W3(c) = wasserstein_gamma(alpha_grand(c),betaIMP_grand(c),sig,min_track_length);
+        end
+        subplot(5,2,9:10)
+        stem(base_dt/60*td,W1,'r')
+        hold on
+        stem(base_dt/60*td,W2,'b')
+        stem(base_dt/60*td,W3,'g')
+        grid on
+        M = [max(W1) max(W2) max(W3)];
+        axis([0 3*td(c)+10 [-0.1 1.1]*max(M)])
+        legend('Our method','MSD','Implicit','Location','northwest')
+        xlabel('Minutes between observations')
+        title('Wasserstein distance')
+        figname = ['figure' num2str(dataset)];
+        saveas(h,figname,'png');
+    else
+        disp('Something is off')
+        doff = doff - 0.5;
+    end
+    disp(['Dataset' num2str(dataset) ' is done!'])
 end
-td      = [1 2 5 7 10 15 20 30];
-
-base_dt = observed_cells{end}(1);
-sig     = observed_cells{end}(end);
-
-[alpha,beta,betaMSD,betaIMP] = diffusion_inference(observed_cells,observed_neighbours,td);
-
-
-
-
-%% MF posterior
-alpha_grand = sum(alpha,1);
-beta_grand = sum(beta,1);
-betaMSD_grand = sum(betaMSD,1);
-betaIMP_grand = sum(betaIMP,1);
-
-r = linspace((sig)^(-2)*0.5,(sig)^(-2)*2,1001);
-for c = 1:length(td)
-    y = gampdf(r,alpha_grand(c),1./beta_grand(c));
-    z = gampdf(r,alpha_grand(c),1./betaMSD_grand(c));
-    w = gampdf(r,alpha_grand(c),1./betaIMP_grand(c));
-    M = [max(y) max(z) max(w)];
-    subplot(5,2,c)
-    plot(r,y,'r')
-    hold on
-    plot(r,z,'b')
-    plot(r,w,'g')
-    plot([1 1]*(sig)^(-2),[-0.1 1.1]*max(M),'k--')
-    axis([r(1) r(end) [-0.1 1.1]*max(M)])
-     xlabel('\sigma^{-2}')
-    ylabel('Probability')
-    title(['MF assumption. Minutes between observations: ' num2str(base_dt/60*td(c))])
-end
-W1 = zeros(size(td,2),1);
-W2 = zeros(size(td,2),1);
-W3 = zeros(size(td,2),1);
-min_track_length = 1;
-for c = 1:length(td)
-    W1(c) = wasserstein_gamma(alpha_grand(c),beta_grand(c),sig,min_track_length);
-    W2(c) = wasserstein_gamma(alpha_grand(c),betaMSD_grand(c),sig,min_track_length);
-    W3(c) = wasserstein_gamma(alpha_grand(c),betaIMP_grand(c),sig,min_track_length);
-end
-subplot(5,2,9:10)
-stem(base_dt/60*td,W1,'r')
-hold on
-stem(base_dt/60*td,W2,'b')
-stem(base_dt/60*td,W3,'g')
-grid on
-axis([0 3*td(c)+10 [-0.1 1.1]*max(max(W1),max(W2))])
-legend('Our method','MSD','Implicit','Location','northwest')
-xlabel('Minutes between observations')
-title('Wasserstein distance')
-
 %% Laplace-Wasserstein 
 clf
 W1 = zeros(size(td,2),1);
@@ -183,4 +192,15 @@ end
 %     title('MSD')
 %     drawnow;
 % end
+tau = 100;
+a = 50000;
+b = tau/a;
+r = linspace(tau/2,3*tau/2,1001);
+y = gampdf(r,a,b);
+subplot(2,1,1)
+plot(r,y)
+subplot(2,1,2)
+p = flip(1./r)
+z = gampdf(p,a,1/(a^2*b));
+plot(p,z);
 

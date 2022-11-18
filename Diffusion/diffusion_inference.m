@@ -15,7 +15,7 @@ end
 
 theta   = observed_cells{end};
 base_dt = theta(1);
-theta   = theta(2:end-4); 
+theta   = theta(2:end-3-N); 
 alpha   = zeros(N,length(td));
 beta    = zeros(N,length(td));
 betaMSD = beta;

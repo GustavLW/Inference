@@ -1,9 +1,9 @@
-function [alpha,beta,betaMSD,betaIMP] = diffusion_inference(observed_cells,observed_neighbours,td)
+function [alpha,beta,betaMSD,betaIMP] = diffusion_inference(observed_cells,td,U_param)
 
 sample_cell = observed_cells{1};
 K           = length(sample_cell.location);
 clear sample_cell
-N           = length(observed_cells)-1;
+N           = length(observed_cells)-2;
 ECEAT       = NaN*ones(N,2,K);
 for i = 1:N
     for k = 1:K
@@ -13,14 +13,18 @@ for i = 1:N
     end
 end
 
-theta   = observed_cells{end};
-base_dt = theta(1);
-theta   = theta(2:end-3-N); 
+base_dt = observed_cells{end-1}(1);
+switch nargin
+    case 2
+        theta   = observed_cells{end-1}(2:end-3-N); 
+    case 3
+        theta = U_param;
+end
 alpha   = zeros(N,length(td));
 beta    = zeros(N,length(td));
 betaMSD = beta;
 betaIMP = beta;
-
+observed_neighbours = observed_cells{end};
 for c = 1:length(td)
     skip = td(c);
     dt = base_dt*skip;

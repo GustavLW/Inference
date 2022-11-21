@@ -11,4 +11,4 @@ elseif type == 2
     theta = [k1 l1 a1 k2 a2 l2];
 end
 
-agent = struct('sigma',NaN,'U_param',theta.*ones(T,length(theta)),'U_velo',(1 + 0.2*abs(randn(size(theta)))).*theta/1000,'fitness',NaN,'U_best',theta,'Bfitness',-Inf);
+agent = struct('sigma',NaN,'U_param',theta.*ones(T,length(theta)),'U_velo',(1 + 0.2*abs(randn(size(theta)))).*theta/100,'fitness',NaN,'U_best',theta,'Bfitness',-Inf);

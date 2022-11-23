@@ -5,7 +5,7 @@ if length(theta) == 6
    type = 2; 
 end
 if type == 0
-    Vmin   = theta(1);
+    Vmin   = theta(1) + 0*theta(2);
     alpha    = theta(2);
 % LJ variables
 D     = -Vmin/(2^(-2)-2^(-1));

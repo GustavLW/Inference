@@ -6,7 +6,7 @@ function pop_tmp = sample_from_next_state(pop_tmp,nei_tmp,U_param,sigma,freq,L)
 dt          = freq/L;
 N           = size(pop_tmp,2);
 
-for k = 1:L
+for k = 1:L-1
     F = interactions(pop_tmp,U_param,nei_tmp); %!! interactions(population,U_param)
     for i = 1:N
         if ~isnan(pop_tmp(1,i))

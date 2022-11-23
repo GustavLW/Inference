@@ -12,7 +12,6 @@ pop_facit = unpack_image(observed_cells,k+1);
 pop_tmp   = unpack_image(observed_cells,k);
 nei_tmp   = observed_cells{end}{k};
 for s = 1:S
-   % pop_tmp = sample_from_next_state(pop_tmp,nei_tmp,U_param,sigma,freq,L)
     pop_next = sample_from_next_state(pop_tmp,nei_tmp,U_param,sigma,dt,L);
     for i = 1:size(pop_next,2)
         ell = ell + mvnpdf(pop_facit(:,i),pop_next(:,i),(dt*sigma(i).^2/L)*eye(2));

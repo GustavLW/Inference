@@ -112,13 +112,12 @@ r  = linspace(0,4,4001);
 th = exp(best_ever_location(T-1,:));
 y  = U(r,th);
 z  = U(r,exp(facit));
-plot(r,y,'b')
+plot(r,y)
 axis([0 4 -2*exp(facit(1)) 4*exp(facit(1))])
 hold on
-plot(r,z,'r')
+plot(r,z)
 %%
 clc
-clf
 RD = calculate_radial_distribution(observed_cells);
 
 subplot(2,1,1)

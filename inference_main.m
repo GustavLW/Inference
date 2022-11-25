@@ -19,10 +19,10 @@ freq  = observed_cells{end-1}(1);
 facit = (observed_cells{end-1}(2:end-3-(length(observed_cells)-2)));
 
 A = 2*feature('numcores');  % number of optimization agents
-Q = 1;
-T = 180;  % number of generations
+Q = 3;
+T = 500;  % number of generations
 L = freq/12;
-S = 4;
+S = 8;
 agents   = cell(A,1);
 pot_type = 1;
 
@@ -61,7 +61,7 @@ for q = 1:Q
         best_tmp = zeros(1,A);
         for a = 1:A
             if t > 1
-                agents{a}.U_velo(t,:)  = inertia(a)*(1 - sim_an1(t) - sim_an2(t))*agents{a}.U_velo(t,:)...
+                agents{a}.U_velo(t,:)  = 2*inertia(a)*(1 - sim_an1(t) - sim_an2(t))*agents{a}.U_velo(t,:)...
                     + 0.2*(4+rand)*(1/250 + sim_an1(t))*(agents{a}.U_best(t,:)   - agents{a}.U_param(t,:))...
                     + 0.2*(4+rand)*(1/250 + sim_an2(t))*(best_ever_location(t,:) - agents{a}.U_param(t,:));
             end
@@ -201,5 +201,6 @@ for t = 1:1:T
     pause(0.01)
 end
 
-
+%%
+dirs = randn(12,2)
 

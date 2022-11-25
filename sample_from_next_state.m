@@ -7,7 +7,7 @@ dt          = freq/L;
 N           = size(pop_tmp,2);
 
 for k = 1:L-1
-    F = interactions(pop_tmp,U_param,nei_tmp); %!! interactions(population,U_param)
+    F = interactions(pop_tmp,U_param,nei_tmp);
     for i = 1:N
         if ~isnan(pop_tmp(1,i))
             pop_tmp(:,i) = pop_tmp(:,i) + dt*F(:,i) + sqrt(dt)*sigma(i)*[randn;randn];

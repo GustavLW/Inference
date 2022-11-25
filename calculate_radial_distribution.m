@@ -1,7 +1,11 @@
-function result = calculate_radial_distribution(observed_cells)
+function result_array = calculate_radial_distribution(observed_cells,dt)
 
 N = length(observed_cells) - 2;
-K = length(observed_cells{end});
+if iscell(observed_cells{end})
+    K = length(observed_cells{end});
+else
+    K = observed_cells{end};
+end
 data = zeros(N*K,3);
 
 for ii = 1:N
@@ -9,16 +13,20 @@ for ii = 1:N
     data(K*(ii-1)+1:K*(ii-1)+K,:) = [tmp (1:K)'];
 end
 data = sortrows(data,3);
-
+data(any(isnan(data),2),:) = [];
 dataType    = 0;
-dt          = 1;
 interactive = 0;
 rmin        = 0.0;
 rmax        = 5;
-deltar      = 0.01;
+deltar      = 0.1;
 
-[result,~] = gr2D(data,dataType,dt,interactive,rmin,rmax,deltar);
-
+result_array = cell(K,1);
+for k = 1:K
+    data_k = data;
+    data_k(any(data_k(:,3)~=k,2),:)  = [];
+    [result,~] = gr2D(data_k,dataType,dt,interactive,rmin,rmax,deltar);
+    result_array{k} = result;
+end
 function [result,t] = gr2D(data,dataType,dt,interactive,rmin,rmax,deltar)
 % pair distribution function
 %
@@ -43,7 +51,7 @@ function [result,t] = gr2D(data,dataType,dt,interactive,rmin,rmax,deltar)
 % dataType: 1 for trackfile. The data output by track()
 %                x   y   t  id
 %           0 for orginal data. without using track(). 
-%                 x y t
+%                x   y   t
 
 %tic
 if nargin < 4, interactive = 0; end % set 1 if you want to watch movie
@@ -141,7 +149,7 @@ for t=tmin:tmax
     end
 end
 tmax=dt*tmax;tmin=dt*tmin;
-result(:,2) = result(:,2)/(tmax-tmin+1);
+result(:,2) = result(:,2)/(density*(tmax-tmin+1));
 %plot(result(:,1),result(:,2))
 
 %toc

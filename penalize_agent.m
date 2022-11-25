@@ -1,18 +1,44 @@
-function penalty = penalize_agent(U_param,t)
+function [penalty,dev] = penalize_agent(RD,forecast_array,U_param,t)
 
-R       = 4;
-epsilon = 10^(-2);
 
-u  = @(y) U(y,exp(U_param));
-v  = @(y) V(y,[0;0],exp(U_param));
-v1 = @(a,y)a(y);
+if iscell(forecast_array)
+dev = 0;
 
-g = [                  1*(abs(u(R))-epsilon*(abs(u(1)) - epsilon));...
-                                                   epsilon.^2-u(0);...
-                                                    v1(v([0;0]),1);...
-                                                              u(1);...
-                                                   -v1(v([1;0]),1);...
-                                                    v1(v([1;0]),1);...
-     -(v1(v([1+epsilon/2;0]),1)-v1(v([1-epsilon/2;0]),1))/epsilon];
-%dev = compare_radial_distribution(observed_cells,exp(U_param));
-penalty = 2^(sqrt(t))*sum((max(g,0)).^2);
+for s = 1:length(forecast_array)
+    ftmp    = forecast_array{s};
+    RDf     = calculate_radial_distribution(ftmp,1);
+    for k = 1:ftmp{end}
+        Rf      = RDf{k};
+        R       = RD{k};
+        sim_PCF = Rf(:,2);
+        tru_PCF = R(:,2);
+        dev     = dev + norm(sim_PCF-tru_PCF); 
+    end
+end
+dev = dev/(length(forecast_array)); % dev as in deviance
+else
+    dev = forecast_array;   % technically not an array now, just a number. 
+                            % BIG slop :)
+end
+
+
+if length(U_param) > 4
+    g = [U_param(1) - U_param(4);
+         U_param(3) - U_param(6);
+         U_param(5) - U_param(2)];
+else
+    g = -U_param(2);
+end
+% Re       = 4;
+% epsilon = 10^(-2);
+% u  = @(y) U(y,exp(U_param));
+% v  = @(y) V(y,[0;0],exp(U_param));
+% v1 = @(a,y)a(y);
+% g = [                  1*(abs(u(Re))-epsilon*(abs(u(1)) - epsilon));...
+%                                                    epsilon.^2-u(0);...
+%                                                     v1(v([0;0]),1);...
+%                                                               u(1);...
+%                                                    -v1(v([1;0]),1);...
+%                                                     v1(v([1;0]),1);...
+%      -(v1(v([1+epsilon/2;0]),1)-v1(v([1-epsilon/2;0]),1))/epsilon];
+penalty = 2^(sqrt(t))*(sum((max(g,0)).^2)+dev);

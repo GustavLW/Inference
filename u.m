@@ -1,11 +1,11 @@
 function v = U(r,theta)
-type = 1; % if we want LJ, set to 0. otherwise ignore. this is the PRIMITIVE of the interaction;
+type = 1; % if we want LJ, set to 0. otherwise ignore. this is the PRIMITIVE of the interaction
 % the POTENTIAL ENERGY
 if length(theta) == 6
    type = 2; 
 end
 if type == 0
-    Vmin   = theta(1);
+    Vmin   = theta(1) + 0*theta(2);
     alpha    = theta(2);
 % LJ variables
 D     = -Vmin/(2^(-2)-2^(-1));

@@ -83,7 +83,7 @@ for q = 1:Q
         else
             new_best                  = new_best + 1;
             best_ever_fitness(t+1)    = best_ever_fitness(t);
-            best_ever_dev(t+1)        = best_ever_dev(t)*1.00^new_best; % in the case of spurious mishaps, these guys get less valuable as time goes on
+            best_ever_dev(t+1)        = best_ever_dev(t)*1.01^new_best; % in the case of spurious mishaps, these guys get less valuable as time goes on
             best_ever_location(t+1,:) = best_ever_location(t,:);
             best_ever_penalty(t+1)    = penalize_agent(RD,best_ever_dev(t+1),best_ever_location(t+1,:),t+1);
         end
@@ -164,11 +164,11 @@ for q = 1:Q
     xs      = linspace(0,5,21);
     facit   = observed_cells{end-1}(2:end-3-(length(observed_cells)-2));
     B_param = (repeated_trials{q,1});
-    plot(xs,U(xs,facit),'ro')
+    plot(xs,U_pot(xs,facit),'ro')
     hold on
-    plot(xs+0.125,U(xs+0.125,B_param),'bd')
-    plot(x,U(x,facit),'r')
-    plot(x,U(x,B_param),'b')
+    plot(xs+0.125,U_pot(xs+0.125,B_param),'bd')
+    plot(x,U_pot(x,facit),'r')
+    plot(x,U_pot(x,B_param),'b')
     plot([0.5 4],[0 0],'k')
     grid on
     axis([0.5 4 facit(1)*[-2 5]])

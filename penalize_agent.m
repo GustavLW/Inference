@@ -31,7 +31,7 @@ else
 end
 % Re       = 4;
 % epsilon = 10^(-2);
-% u  = @(y) U(y,exp(U_param));
+% u  = @(y) U_pot(y,exp(U_param));
 % v  = @(y) V(y,[0;0],exp(U_param));
 % v1 = @(a,y)a(y);
 % g = [                  1*(abs(u(Re))-epsilon*(abs(u(1)) - epsilon));...

@@ -1,4 +1,4 @@
-function v = U(r,theta)
+function v = U_pot(r,theta)
 type = 1; % if we want LJ, set to 0. otherwise ignore. this is the PRIMITIVE of the interaction
 % the POTENTIAL ENERGY
 if length(theta) == 6

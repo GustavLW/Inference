@@ -17,8 +17,10 @@ for s = 1:S
     pop_next = sample_from_next_state(pop_tmp,nei_tmp,U_param,sigma,dt,L);
     F = interactions(pop_tmp,(U_param),nei_tmp);
     for i = 1:size(pop_next,2)
-        ell = ell + mvnpdf(pop_facit(:,i),pop_next(:,i) + (dt/L)*F(:,i),(dt*sigma(i).^2/L)*eye(2));
-        pop_next(:,i) = pop_next(:,i) + (dt/L)*F(:,i) + sqrt(dt/L)*sigma(i)*[randn;randn];
+        if and(~isnan(pop_next(1,i)),sigma(i)>0)
+            ell = ell + mvnpdf(pop_facit(:,i),pop_next(:,i) + (dt/L)*F(:,i),(dt*sigma(i).^2/L)*eye(2));
+            pop_next(:,i) = pop_next(:,i) + (dt/L)*F(:,i) + sqrt(dt/L)*sigma(i)*[randn;randn];
+        end
     end
     pop_forecast{s} = pop_next;
 end

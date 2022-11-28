@@ -45,9 +45,13 @@ for c = 1:length(td)
                     ni           = xi + 0.5*(mi+ni);
                     mi           = xi + mi;
                     alpha(i,c)   = alpha(i,c)   + 1;
-                    beta(i,c)    = beta(i,c)    + 0.5*dot(xn-mi,Si\(xn-mi));
-                    betaIMP(i,c) = betaIMP(i,c) + 0.5*dot(xn-ni,Zi\(xn-ni));
-                    betaMSD(i,c) = betaMSD(i,c) + 0.5*dot(xn-xi,xn-xi)/dt;
+                    if ~isnan(cond(Si))
+                        beta(i,c)    = beta(i,c)    + 0.5*dot(xn-mi,Si\(xn-mi));
+                        betaIMP(i,c) = betaIMP(i,c) + 0.5*dot(xn-ni,Zi\(xn-ni));
+                        betaMSD(i,c) = betaMSD(i,c) + 0.5*dot(xn-xi,xn-xi)/dt;
+                    else
+                        beta(i,c)    = beta(i,c)    + 500*dot(xn-xi,xn-xi)/dt; % messed up times requires messed up solutions
+                    end
                 end
             end
         end

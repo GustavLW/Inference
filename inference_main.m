@@ -19,12 +19,12 @@ freq  = observed_cells{end-1}(1);
 facit = (observed_cells{end-1}(2:end-3-(length(observed_cells)-2)));
 
 A = 2*feature('numcores');  % number of optimization agents
-Q = 3;
-T = 500;  % number of generations
+Q = 1;
+T = 20;  % number of generations
 L = freq/12;
-S = 8;
+S = 1;
 agents   = cell(A,1);
-pot_type = 1;
+pot_type = 2;
 
 RD = calculate_radial_distribution(observed_cells,1);
 sim_an1   = @(t) (1/3)*exp(-4./((12*t).^(1/4)));
@@ -158,7 +158,7 @@ for k = 1:K-1
 end
 disp([dF dW])
 %% COMPARE WINNING POTENTIAL COMPARED TO UNDERLYING
-for q = 1:Q
+for q = 1:1
     hold off
     x       = linspace(0,5,1001);
     xs      = linspace(0,5,21);
@@ -201,6 +201,4 @@ for t = 1:1:T
     pause(0.01)
 end
 
-%%
-dirs = randn(12,2)
 

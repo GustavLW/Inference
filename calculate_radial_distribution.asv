@@ -160,7 +160,7 @@ if length(data(1,:)) > 0
 
     %toc
 else
-    result = [0 0];
+    result = ;
 end
 
 

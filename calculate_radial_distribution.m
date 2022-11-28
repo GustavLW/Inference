@@ -163,7 +163,7 @@ else
     result = [0 0];
 end
 
-
+end
 %--------------------------------------------------------------------------
 % local function
 function theta = checkquadrant(pos0,xref,yref,hix,hiy,nr,rvec,rsqr,rmax,thetax,thetay)

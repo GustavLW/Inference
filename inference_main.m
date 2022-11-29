@@ -20,9 +20,9 @@ facit = (observed_cells{end-1}(2:end-3-(length(observed_cells)-2)));
 
 A = 2*feature('numcores');  % number of optimization agents
 Q = 1;
-T = 20;  % number of generations
+T = 225;  % number of generations
 L = freq/12;
-S = 1;
+S = 10;
 agents   = cell(A,1);
 pot_type = 2;
 
@@ -65,7 +65,7 @@ for q = 1:Q
                     + 0.2*(4+rand)*(1/250 + sim_an1(t))*(agents{a}.U_best(t,:)   - agents{a}.U_param(t,:))...
                     + 0.2*(4+rand)*(1/250 + sim_an2(t))*(best_ever_location(t,:) - agents{a}.U_param(t,:));
             end
-            vmax = 0.075;
+            vmax = 0.05*length(agents{a}.U_velo(t,:));
             if norm(agents{a}.U_velo(t,:)) > vmax
                 agents{a}.U_velo(t,:) = vmax*agents{a}.U_velo(t,:)/norm(agents{a}.U_velo(t,:));
             end
@@ -114,8 +114,8 @@ for k = 1:K-1
         forecast_cells{i}.location(:,k+1) = pop_forecast(:,i) + (freq/L)*F(:,i) + sqrt(freq/L)*sigma(i)*[randn;randn];
     end
 end
-forecast_cells{end-1}(2:end-3-(length(observed_cells)-2)) = U_param;
-forecast_cells{end-1}(end-N+1:end)                        = sigma;
+%forecast_cells{end-1}(2:end-3-(length(observed_cells)-2)) = U_param;
+%forecast_cells{end-1}(end-N+1:end)                        = sigma;
 RDf = calculate_radial_distribution(forecast_cells,1);
 
 %%% PROPOSAL %%%
@@ -171,7 +171,7 @@ for q = 1:1
     plot(x,U_pot(x,B_param),'b')
     plot([0.5 4],[0 0],'k')
     grid on
-    axis([0.5 4 facit(1)*[-2 5]])
+    axis([0.5 4 -U_pot(1,facit)*[-2 5]])
     xlabel('Distance')
     ylabel('Potential energy')
     title('Winning potential compared to underlying')
@@ -189,14 +189,46 @@ for t = 1:1:T
         current_params(a,:) = agents{a}.U_param(t,:);
         current_best(a,:)   = agents{a}.U_best(t,:);
     end
-    hold off
-    scatter(current_params(:,1),current_params(:,2),'k*')
-    hold on
-    scatter(current_best(:,1),current_best(:,2),'b*')
-    scatter(best_ever_location(t,1),best_ever_location(t,2),'ro')
-    plot(log(facit(1)),log(facit(2)),'rd')
-    axis([-15 -0 0 5])
-    grid on
+    if size(agents{a}.U_param(t,:)) < 4
+        hold off
+        scatter(current_params(:,1),current_params(:,2),'k*')
+        hold on
+        scatter(current_best(:,1),current_best(:,2),'b*')
+        scatter(best_ever_location(t,1),best_ever_location(t,2),'ro')
+        plot(log(facit(1)),log(facit(2)),'rd')
+        axis([-15 -0 0 5])
+        grid on
+    else
+        subplot(2,2,1)
+        hold off
+        scatter(current_params(:,1),current_params(:,4),'k*')
+        hold on
+        scatter(current_best(:,1),current_best(:,4),'b*')
+        scatter(best_ever_location(t,1),best_ever_location(t,4),'ro')
+        plot(log(facit(1)),log(facit(4)),'rd')
+        axis([log(facit(1))-5 log(facit(1))+5 log(facit(4))-5 log(facit(4))+5])
+        grid on
+        subplot(2,2,2)
+        hold off
+        scatter(current_params(:,2),current_params(:,5),'k*')
+        hold on
+        scatter(current_best(:,2),current_best(:,5),'b*')
+        scatter(best_ever_location(t,2),best_ever_location(t,5),'ro')
+        plot(log(facit(2)),log(facit(5)),'rd')
+        axis([log(facit(2))-5 log(facit(2))+5 log(facit(5))-5 log(facit(5))+5])
+        grid on
+        subplot(2,2,3)
+        hold off
+        scatter(current_params(:,3),current_params(:,6),'k*')
+        hold on
+        scatter(current_best(:,3),current_best(:,6),'b*')
+        scatter(best_ever_location(t,3),best_ever_location(t,6),'ro')
+        plot(log(facit(3)),log(facit(6)),'rd')
+        axis([log(facit(3))-5 log(facit(3))+5 log(facit(6))-5 log(facit(6))+5])
+        grid on
+
+
+    end
     drawnow;
     pause(0.01)
 end

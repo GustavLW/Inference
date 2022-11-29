@@ -25,13 +25,13 @@ for k = 1:K
     data_k = data;
     data_k(any(data_k(:,3)~=k,2),:)  = [];
     if sum(size(data_k))>0
-        [result,~] = gr2D(data_k,dataType,dt,interactive,rmin,rmax,deltar);
+        [result,~] = gr2Ds(data_k,dataType,dt,interactive,rmin,rmax,deltar);
     else
-        result = [];
+        result = [Inf Inf];
     end
     result_array{k} = result;
 end
-function [result,t] = gr2D(data,dataType,dt,interactive,rmin,rmax,deltar)
+function [result,t] = gr2Ds(data,dataType,dt,interactive,rmin,rmax,deltar)
 % pair distribution function
 %
 % MODIFICATION HISTORY:
@@ -63,7 +63,9 @@ if nargin < 5, rmin = 0; end
 if nargin < 6, rmax = 10; end
 if nargin < 7, deltar = 0.01; end
 
-if length(data(1,:)) > 0
+if and(length(data(1,:)) == 3,length(data(:,1))>0)
+    %disp('WE HERE')
+    %disp(data)
     nel = length(data(1,:)); % how many columns
     npts = length(data(:,1));% how many particles
     if dataType==0

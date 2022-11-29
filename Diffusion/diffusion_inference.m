@@ -16,7 +16,7 @@ end
 base_dt = observed_cells{end-1}(1);
 switch nargin
     case 2
-        theta   = observed_cells{end-1}(2:end-3-N); 
+        theta   = observed_cells{end-1}(5:end-(length(observed_cells)-2));
     case 3
         theta = U_param;
 end

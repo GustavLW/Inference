@@ -155,3 +155,5 @@ for d = length(df):length(df)
     disp(['Dataset ' num2str(d) ' is done!'])
 end
 
+%%
+observed_cells{end-1}(5:end-(length(observed_cells)-2))

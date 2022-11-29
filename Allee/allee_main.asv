@@ -70,12 +70,7 @@ for q = 1:Q
     end
 end
 %%
-o0K = o0 + sum(death_event_list(:,2));
-o1K = o1 + sum(death_event_list(:,1)-death_event_list(:,2));
-
-death_pdf = @(r) (1/beta(o0K,o1K))*(1-exp(-dt*r)).^(o0K-1).*exp(-(o1K-1)*dt*r);
-r = linspace(0,1,10001);
-plot(r,death_pdf(r))
+o0K = o0 + sum()
 
 
 %%

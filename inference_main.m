@@ -16,7 +16,7 @@ df = df(3:end);
 load([DataFolder '\' df(end).name])
 K     = length(observed_cells{end});
 freq  = observed_cells{end-1}(1);
-facit = (observed_cells{end-1}(2:end-3-(length(observed_cells)-2)));
+facit = observed_cells{end-1}(5:end-(length(observed_cells)-2));
 
 A = 2*feature('numcores');  % number of optimization agents
 Q = 1;
@@ -24,7 +24,7 @@ T = 225;  % number of generations
 L = freq/12;
 S = 10;
 agents   = cell(A,1);
-pot_type = 2;
+pot_type = 1;
 
 RD = calculate_radial_distribution(observed_cells,1);
 sim_an1   = @(t) (1/3)*exp(-4./((12*t).^(1/4)));

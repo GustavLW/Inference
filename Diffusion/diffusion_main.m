@@ -13,7 +13,7 @@ td = [1 2 5 7 10 15 20 30];
 
 
 MF = 0; % do we want to assume that all sigma are equal when evaluating performance?
-for d = length(df):length(df)
+for d = 1:length(df)
     load([DataFolder '\' df(d).name])
 
     base_dt = observed_cells{end-1}(1);
@@ -89,9 +89,9 @@ for d = length(df):length(df)
         end
         for c = 1:length(td)
 
-            log_modes = log(sqrt(beta./(alpha)));
-            MSD_modes = log(sqrt(betaMSD./(alpha)));
-            IMP_modes = log(sqrt(betaIMP./(alpha)));
+            log_modes = log10(sqrt(beta./(alpha)));
+            MSD_modes = log10(sqrt(betaMSD./(alpha)));
+            IMP_modes = log10(sqrt(betaIMP./(alpha)));
             test = log_modes(:,c);
             test = test(~isnan(test));
             test1 = MSD_modes(:,c);
@@ -100,7 +100,7 @@ for d = length(df):length(df)
             test2 = test2(~isnan(test2));
             kern = @(x,r) normpdf(r,x,1/(length(log_modes))^(5/8));
             span = 5;
-            r = linspace(log((min(sig))/span),log((max(sig))*span),1001);
+            r = linspace(log10((min(sig))/span),log10((max(sig))*span),1001);
             y = zeros(size(r));
             y1 = y;
             y2 = y;
@@ -120,8 +120,8 @@ for d = length(df):length(df)
             %plot(r,max(h2.Values)*y2/max(y2),'g','LineWidth',1.5)
             M = [max(h0.Values) max(h1.Values) max(h1.Values)];
             axis([r(1) r(end) -0.1*max(M) 1.4*max(M)])
-            plot(log([min(sig) min(sig)]),[-0.1 1.4]*max(M),'k--','LineWidth',1.5)
-            plot(log([max(sig) max(sig)]),[-0.1 1.4]*max(M),'k--','LineWidth',1.5)
+            plot(log10([min(sig) min(sig)]),[-0.1 1.4]*max(M),'k--','LineWidth',1.5)
+            plot(log10([max(sig) max(sig)]),[-0.1 1.4]*max(M),'k--','LineWidth',1.5)
             plot(([r(1) r(end)]),[0 0],'k','LineWidth',1.0)
             %legend('Our method','MSD','Location','northwest')
             title( ['\fontsize{10} Minutes between observations: ' num2str(base_dt/60*td(c))])
@@ -154,6 +154,3 @@ for d = length(df):length(df)
     end
     disp(['Dataset ' num2str(d) ' is done!'])
 end
-
-%%
-observed_cells{end-1}(5:end-(length(observed_cells)-2))

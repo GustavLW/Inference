@@ -7,10 +7,9 @@ SimFolder  = [TopFolder '\Simulation'];
 DataFolder = [SimFolder '\Datasets'];
 %dir(SimFolder)
 addpath(([SimFolder, filesep]))
-addpath(([fileparts(pwd) '\Diffusion']))
-addpath(([fileparts(pwd) '\Allee']))
-addpath(([fileparts(pwd) '\Interaction']))
-
+addpath(([fileparts(pwd '\Diffusion']))
+addpath(([pwd '\Allee']))
+addpath(([pwd '\Interaction']))
 df = dir(DataFolder);
 df = df(3:end);
 

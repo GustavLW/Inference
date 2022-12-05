@@ -9,7 +9,7 @@ DataFolder = [SimFolder '\Datasets'];
 addpath(([SimFolder, filesep]))
 df = dir(DataFolder);
 df = df(3:end);
-td = [1 5 10 15 20 30 45 60];
+td = [1 2 4 6 9 12];
 
 
 MF = 0; % do we want to assume that all sigma are equal when evaluating performance?
@@ -114,10 +114,10 @@ for d = 1:length(df)
             h0 = histogram(test,'FaceColor',[0.75 0 0],'Normalization','probability','FaceAlpha',0.35);
             hold on
             h1 = histogram(test1,'FaceColor',[0 0 0.75],'Normalization','probability','FaceAlpha',0.35);
-            h2 = histogram(test2,'FaceColor',[0 0.75 0],'Normalization','probability','FaceAlpha',0.35);
+            %h2 = histogram(test2,'FaceColor',[0 0.75 0],'Normalization','probability','FaceAlpha',0.35);
             plot(r,max(h0.Values)*y/max(y),'r','LineWidth',1.5)
             plot(r,max(h1.Values)*y1/max(y1),'b','LineWidth',1.5)
-            plot(r,max(h2.Values)*y2/max(y2),'g','LineWidth',1.5)
+            %plot(r,max(h2.Values)*y2/max(y2),'g','LineWidth',1.5)
             M = [max(h0.Values) max(h1.Values) max(h1.Values)];
             axis([r(1) r(end) -0.1*max(M) 1.4*max(M)])
             plot(log([min(sig) min(sig)]),[-0.1 1.4]*max(M),'k--','LineWidth',1.5)
@@ -126,8 +126,9 @@ for d = 1:length(df)
             %legend('Our method','MSD','Location','northwest')
             title( ['\fontsize{10} Minutes between observations: ' num2str(base_dt/60*td(c))])
             grid on
-            xlh = xlabel('\fontsize{12} \sigma');
-            xlh.Position(2) = xlh.Position(2) + 0.1;
+            %xlh = xlabel('\fontsize{12} \sigma');
+            %xlh.Position(2) = xlh.Position(2) + 0.1;
+            xlabel('\fontsize{12} \sigma');
             ylabel('Distribution of modes')
             yticks([])
         end
@@ -139,7 +140,7 @@ for d = 1:length(df)
         stem(W1,'r')
         hold on
         stem(W2,'b')
-        stem(W3,'g')
+        %stem(W3,'g')
         grid on
         xticks(1:length(W1));
         xticklabels(string(base_dt/60*td));
@@ -147,7 +148,7 @@ for d = 1:length(df)
         %legend('Our method','MSD','Implicit','Location','northwest')
         xlabel('Minutes between observations')
         title('Sum of mode deviations')
-        sgtitle(['Distribution of posteriors modes for Experiment ' num2str(d)])
+        sgtitle(['Distribution of posteriors modes for a system of ' num2str(length(test)) ' cells.'])
         figname = ['MODEfigure' num2str(d)];
         saveas(h,strcat('Results\',figname),'png');
 

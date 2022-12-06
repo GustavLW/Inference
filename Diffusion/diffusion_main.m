@@ -2,17 +2,17 @@ clc
 clear all
 close all
 
-TopFolder  = fileparts(fileparts(pwd));
-SimFolder  = [TopFolder '\Simulation'];
-DataFolder = [SimFolder '\Datasets'];
-%dir(SimFolder)
+TopFolder     = fileparts(fileparts(pwd));
+SimFolder     = [TopFolder '\Simulation'];
+DataFolder    = [SimFolder '\Datasets'];
+DataFolderPub = [pwd '\Data'];              % datasets used in publication
 addpath(([SimFolder, filesep]))
-df = dir(DataFolder);
+df = dir(DataFolderPub);
 df = df(3:end);
 td = [1 2 4 6 9 12];
 
-
 MF = 0; % do we want to assume that all sigma are equal when evaluating performance?
+alphabeta_cell = cell(length(df),3);
 for d = 1:length(df)
     load([DataFolder '\' df(d).name])
 
@@ -20,6 +20,9 @@ for d = 1:length(df)
     sig     = observed_cells{end-1}(end-length(observed_cells)+3:end);
 
     [alpha,beta,betaMSD,betaIMP] = diffusion_inference(observed_cells,td);
+    alphabeta_cell{d,1} = alpha;
+    alphabeta_cell{d,2} = beta;
+    alphabeta_cell{d,3} = betaMSD;
     h = figure('units','centimeters','position',[0 0 16.8 21],'visible','off');
     if MF == 1% MF posterior
         alpha_grand = sum(alpha,1);
@@ -128,7 +131,7 @@ for d = 1:length(df)
             grid on
             %xlh = xlabel('\fontsize{12} \sigma');
             %xlh.Position(2) = xlh.Position(2) + 0.1;
-            xlabel('\fontsize{12} \sigma');
+            xlabel('$\log(\hat{\sigma})$','interpreter','latex');
             ylabel('Distribution of modes')
             yticks([])
         end
@@ -153,5 +156,99 @@ for d = 1:length(df)
         saveas(h,strcat('Results\',figname),'png');
 
     end
+    h2 = figure('units','centimeters','position',[0 0 16.8 13.5],'visible','off');
+    selected_cells = randi(length(alphabeta_cell{d,1}),1,4);
+    selected_cells = sort(selected_cells);
+    for s = 1:4
+        m = 1;
+        i = selected_cells(s);
+        legcel = cell(length(td),1);
+        for c = 1:length(td)
+            legcel{c} = [num2str(td(c)*base_dt/60) ' minutes'];
+            al = alphabeta_cell{d,1};
+            be = alphabeta_cell{d,2};
+            r = linspace((min(sig))^(-2)*0.25,(max(sig))^(-2)*10,1001);
+            p = flip(1./r);
+            a = al(i,c);
+            b = 1/be(i,c);
+            y = gampdf(p,a,1/(a^2*b));
+            M = [m max(y)];
+            subplot(ceil(length(selected_cells)/2),2,s)
+            h(c) = plot(p,y,'Color',[1 c/6 0],'LineWidth',1.1);
+            hold on
+            axis([min(p) max(p) 0 1.4*max(M)])
+            m = max(M);
+            title(['Posteriors for cell ' num2str(i) '.'])
+        end
+        plot([1 1]*(max(sig))^(2),[-0.1 1.4]*max(M),'k--','LineWidth',1.5)
+        legend(h(1:c),legcel);
+        xlabel('$\sigma^{2}$','interpreter','latex')
+        ylabel('$p(\sigma^2|X)$','interpreter','latex')
+        sgtitle(['Posteriors for four random individuals in a population of ' num2str(length(alphabeta_cell{d,1})) ' cells.'])
+        grid on
+    end
+    postname = ['POSTfigure' num2str(d)];
+    saveas(h2,strcat('Results\',postname),'png');
     disp(['Dataset ' num2str(d) ' is done!'])
 end
+
+
+%% for table
+clear figure
+close all
+wass_matrix = zeros(length(df),length(td));
+
+for d = 1:length(df)
+    al    = alphabeta_cell{d,1};
+    be    = alphabeta_cell{d,2};
+    bm    = alphabeta_cell{d,3};
+    for c = 1:length(td)
+        W1 = wasserstein_gamma(al(:,c),be(:,c),sig,min_track_length);
+        W2 = wasserstein_gamma(al(:,c),bm(:,c),sig,min_track_length);
+        wass_matrix(d,c) = W1-W2;
+    end
+end
+[m1,i] = max(abs(wass_matrix));
+[m2,j] = max(m1);
+extreme = wass_matrix(i(j),j);
+if extreme < 0
+color_fun = @(x) [x/(2*extreme) + 1/2 0 -x/(2*extreme) + 1/2];
+else
+color_fun = @(x) [-x/(2*extreme) + 1/2 0 x/(2*extreme) + 1/2];
+end
+
+color_tensor = zeros(length(df),length(td),3);
+for d = 1:length(df)
+    for c = 1:length(td)
+        color_tensor(d,c,:) = color_fun(wass_matrix(d,c))/norm(color_fun(wass_matrix(d,c)));
+    end
+end
+
+x = linspace(-extreme,extreme);
+custom_color_map = zeros(100,3);
+for cc = 1:100
+custom_color_map(cc,:) = color_fun(x(cc))/norm(color_fun(x(cc)));
+end
+
+colormap(custom_color_map);
+image(color_tensor)
+xticks(1:6)
+yticks(1:4)
+xticklabels({'5 min','10 min','20 min','30 min','45 min','60 min'})
+yticklabels({'N=64','N=128','N=256','N=512'})
+ytickangle(90)
+set(gca,'xaxisLocation','top')
+
+hold on
+for i = 1:4 
+    for j = 1:6
+        plot(-0.5 + [1 7], 0.5 + [i i],'k')
+        plot(-0.5 + [j j], 0.5 + [0 4],'k')
+    end
+end
+
+axis equal
+axis([0.5 6.5 0.5 4.5])
+
+colorbar('Ticks',[0,1],...
+         'TickLabels',{strcat('\Delta = ',num2str(-extreme)),strcat('\Delta = ',num2str(extreme))})

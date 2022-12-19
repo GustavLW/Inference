@@ -59,9 +59,9 @@ if is_sim == 0
     end
 elseif is_sim == 1
     N                = length(observed_cells)-2;
-    K                = length(observed_cells{end});
+    K                = length(observed_cells{1}.location);
     birth_event_list = [];
-    death_event_list = [(1:K)' zeros(72,1) (1:K)'];
+    death_event_list = [(1:K)' zeros(K,1) (1:K)'];
     ECAET            = NaN*ones(N,2,K);
     for i = 1:N
         for k = 1:K

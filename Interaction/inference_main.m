@@ -14,16 +14,16 @@ addpath(([fileparts(pwd) '\Interaction']))
 df = dir(DataFolder);
 df = df(3:end);
 
-load([DataFolder '\' df(end).name])
+load([DataFolder '\' df(7).name])
 K     = length(observed_cells{end});
 freq  = observed_cells{end-1}(1);
 facit = observed_cells{end-1}(5:end-(length(observed_cells)-2));
 
 A = 2*feature('numcores');  % number of optimization agents
 Q = 1;
-T = 225;  % number of generations
+T = 90;  % number of generations
 L = freq/12;
-S = 10;
+S = 6;
 agents   = cell(A,1);
 pot_type = 1;
 
@@ -163,7 +163,7 @@ for q = 1:1
     hold off
     x       = linspace(0,5,1001);
     xs      = linspace(0,5,21);
-    facit   = observed_cells{end-1}(2:end-3-(length(observed_cells)-2));
+    facit = observed_cells{end-1}(5:end-(length(observed_cells)-2));
     B_param = (repeated_trials{q,1});
     plot(xs,U_pot(xs,facit),'ro')
     hold on
@@ -172,7 +172,7 @@ for q = 1:1
     plot(x,U_pot(x,B_param),'b')
     plot([0.5 4],[0 0],'k')
     grid on
-    axis([0.5 4 -U_pot(1,facit)*[-2 5]])
+    axis([0.5 4 facit(1)*[-2 5]])
     xlabel('Distance')
     ylabel('Potential energy')
     title('Winning potential compared to underlying')

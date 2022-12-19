@@ -23,9 +23,7 @@ df = df(3:end);
         end
     end
 %%
-
-load facit2BEL.mat
-load facit2ECAET.mat
+load facit
 
 
 
@@ -44,8 +42,8 @@ rho = min(rho,1);
 dt  = 1800;%observed_cells{end-1}(1);
 N   = size(D{1},1);
 K   = length(D);
-M   = 4000;           % M is the number of MCMC iterations
-Q   = 20;             % Q is the number of trials
+M   = 2000;           % M is the number of MCMC iterations
+Q   = 10;             % Q is the number of trials
 
 all_l0 = ones(M,Q);
 all_l1 = ones(M,Q);
@@ -91,9 +89,9 @@ subplot(2,1,1)
 histogram(all_l0(Indices,I))
 hold on
 plot([log(facit(1)) log(facit(1))],[0 40],'k--')
-%xlim([-20 0])
+xlim([-20 0])
 subplot(2,1,2)
 histogram(all_l1(Indices,I))
 hold on
 plot([log(facit(2)) log(facit(2))],[0 40],'k--')
-%xlim([-20 0])
+xlim([-20 0])

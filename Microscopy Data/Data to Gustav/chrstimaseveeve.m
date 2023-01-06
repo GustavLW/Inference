@@ -1,90 +1,136 @@
 clc 
 clear all
-
 tmp_dir = dir([cd '\Tracks\558']);
 tmp_dir = tmp_dir(3:end);
-data = readtable([cd '\Tracks\558\' tmp_dir(4).name]);
-%%
-celldata = table2array(data);
+d = 3;
+dstring = tmp_dir(12*(d-1)+4).name;
+data = readtable([cd '\Tracks\558\' dstring]);
 
+clean = 1;
+
+celldata = table2array(data);
 N = max(data.particle);
 K = max(data.frame);
-ECAET = nan*ones(2,N,K - 2*69+1);
+ECAET = nan*ones(2,N,232);
 for ik = 1:length(celldata)
     tmp_row = celldata(ik,:);
-    if and(tmp_row(9) < K-68, tmp_row(9) > 68)
-        k            = tmp_row(9)-68;
+    if and(tmp_row(9) < 298, tmp_row(9) > 67)
+        k            = tmp_row(9)-67;
         i            = tmp_row(10);
         ECAET(1,i,k) = tmp_row(2); 
         ECAET(2,i,k) = tmp_row(1);
     end
 end
 
-% remove shorties
-min_length = 3;
-for i = 1:size(ECAET,2)
-    tmp_exist = squeeze(~isnan(ECAET(1,i,:)));
-    tmp_index = find(tmp_exist==1);
-    if size(tmp_index)>0
-        obs_span = [tmp_index(1) tmp_index(end)];
-        if (obs_span(2) - obs_span(1)) < min_length % is the track short?
-            if obs_span(1) + min_length > size(ECAET,3) % and is it so for thisreason?
-            elseif obs_span(2) - min_length < 1 % or this reason?
-            else
-                ECAET(:,i,:) = nan;
+if clean == 1
+    % remove shorties
+    min_length = 2;
+    for i = 1:size(ECAET,2)
+        tmp_exist = squeeze(~isnan(ECAET(1,i,:)));
+        tmp_index = find(tmp_exist==1);
+        if size(tmp_index)>0
+            obs_span = [tmp_index(1) tmp_index(end)];
+            if (obs_span(2) - obs_span(1)) < min_length % is the track short?
+                if obs_span(1) + min_length > size(ECAET,3) % and is it so for thisreason?
+                elseif obs_span(2) - min_length < 1 % or this reason?
+                else
+                    ECAET(:,i,:) = nan;
+                end
+            end
+        end
+    end
+    % remove shit
+    i = 1;
+    while i <= size(ECAET,2)
+        if sum(isnan(ECAET(1,i,:))) == size(ECAET,3)
+            ECAET(:,i,:) = [];
+            %disp(['Row removed. Current cell count is ' num2str(size(ECAET,2))])
+        else
+            i = i + 1;
+            %disp('No cell removed! We are moving forward lads')
+        end
+    end
+    % fill gap
+    clc
+    for i = 1:size(ECAET,2)
+        A = squeeze(ECAET(1,i,:));
+        B = find(~isnan(A));
+        if max(diff(B)) > 1
+            k0 = B(1);
+            k1 = B(end);
+        else
+            k0 = max(1,min(B));
+            k1 = min(max(B),size(ECAET,3));
+        end
+        for k = k0:k1-1
+            now  = squeeze(ECAET(1,i,k));
+            next = squeeze(ECAET(1,i,k+1));
+
+            if and(~isnan(now),isnan(next))
+                ECAET(1,i,k+1) = ECAET(1,i,k);
+                ECAET(2,i,k+1) = ECAET(2,i,k);
             end
         end
     end
 end
-
-% remove shit
-i = 1;
-while i <= size(ECAET,2)
-    if sum(isnan(ECAET(1,i,:))) == size(ECAET,3)
-        ECAET(:,i,:) = [];
-        disp(['Row removed. Current cell count is ' num2str(size(ECAET,2))])
-    else
-        i = i + 1;
-        disp('No cell removed! We are moving forward lads')
+%%
+N = size(ECAET,2);
+K = size(ECAET,3);
+rdf_data = [];
+for i = 1:N
+    for k = 1:K
+        if ~isnan(squeeze(ECAET(1,i,k)))
+            rdf_data = [rdf_data; ECAET(1,i,k) ECAET(2,i,k) k];
+        end
     end
 end
+[result,t] = gr2D(rdf_data,0,1,0,0,250,2);
 
-% fill gap
-% for i = 1:size(ECAET,2)
-%     tmp_exist = squeeze(~isnan(ECAET(1,i,:)));
-%     tmp_index = find(tmp_exist==1);
-%     for ki = 1:size(tmp_index)-1
-%         if tmp_index(ki+1) ~= tmp_index(ki)
-%             ECAET(:,i,tmp_index(ki+1)) = ECAET(:,i,tmp_index(ki));
-%         end
-%     end
-% end
+
+%%
+r = result(:,1);
+g = smoothdata(result(:,2));
+plot(r,g/mean(g(120:end)),'k')
+xlabel('r')
+ylabel('g(r)')
+grid on
+
+[~,I] = max(g);
+r0 = r(I);
+ECAET = ECAET/r0;
 
 save("extracted_tracks.mat",'ECAET')
-
 %%
 clc
 N = size(ECAET,2);
-imfolder = dir([cd '\Images\558\A1\binary_mask']);
-
-images   = imfolder(70:length(imfolder)-71);
-
-for k = 1:size(ECAET,3)
-    hold off
-    imshow([cd '\Images\558\A1\binary_mask\' images(k).name])
-    hold on
-    for i = 1:N
-        k0 = max(k-4,1);
-        plot(squeeze(ECAET(1,i,k0:k)),squeeze(ECAET(2,i,k0:k)),'y-o')
-    end
-    drawnow;
+K = size(ECAET,3);
+h = figure('units','centimeters','position',[0 0 2*14.08 2*10.40]);
+bmfolder = dir([cd '\Images\558\' dstring(1:2)  '\binary_mask']);
+bmages   = bmfolder(71:length(bmfolder)-70);
+imfolder = dir([cd '\Images\558\' dstring(1:2)]);
+images   = imfolder(71:length(imfolder)-71);
+for k = 1:K
+bm_tmp = imread([cd '\Images\558\' dstring(1:2) '\binary_mask\' bmages(k).name]);
+bm_tmp = im2double(bm_tmp);
+im_tmp = imread([cd '\Images\558\' dstring(1:2) '\' images(k).name]);
+im_tmp = im2double(im_tmp);
+cm_tmp         = im_tmp;
+em_tmp         = find(im_tmp==0);
+cm_tmp(em_tmp) = max(max(cm_tmp));
+fm_tmp         = (imgaussfilt(bm_tmp,5)/max(max(imgaussfilt(bm_tmp,5))) + imgaussfilt(bm_tmp,15)/max(max(imgaussfilt(bm_tmp,15))) + imgaussfilt(bm_tmp,35)/max(max(imgaussfilt(bm_tmp,35))))/3;
+fm             = fm_tmp.*imgaussfilt(im_tmp./cm_tmp,4);
+filtered_image = uint8(fm*255);
+hold off
+imshow(filtered_image)
+hold on
+scatter(squeeze(ECAET(1,:,k)),squeeze(ECAET(2,:,k)),'red','filled')
+%     for i = 1:N
+%         k0 = max(k-0,1);
+%         plot(squeeze(ECAET(1,i,k0:k)),squeeze(ECAET(2,i,k0:k)),'y-o')
+%     end
+     drawnow;
 end
-
-
-
-%%
-
-function [result,t] = gr2Ds(data,dataType,dt,interactive,rmin,rmax,deltar)
+function [result,t] = gr2D(data,dataType,dt,interactive,rmin,rmax,deltar)
 % pair distribution function
 %
 % MODIFICATION HISTORY:
@@ -109,13 +155,11 @@ function [result,t] = gr2Ds(data,dataType,dt,interactive,rmin,rmax,deltar)
 %                x   y   t  id
 %           0 for orginal data. without using track(). 
 %                x   y   t
-
 %tic
 if nargin < 4, interactive = 0; end % set 1 if you want to watch movie
 if nargin < 5, rmin = 0; end
 if nargin < 6, rmax = 10; end
 if nargin < 7, deltar = 0.01; end
-
 if and(length(data(1,:)) == 3,length(data(:,1))>0)
     %disp('WE HERE')
     %disp(data)
@@ -130,7 +174,6 @@ if and(length(data(1,:)) == 3,length(data(:,1))>0)
         result=[];
         return
     end
-
     tmin = min(data(:,tel));
     tmax = max(data(:,tel));
     nr = (rmax - rmin)/deltar+1;
@@ -146,7 +189,6 @@ if and(length(data(1,:)) == 3,length(data(:,1))>0)
     y1 = max(data(:,2));
     density=npts/(tmax-tmin+1)/((x1-x0)*(y1-y0));
     %disp(strcat('number density = ',num2str(density)));
-
     for t=tmin:tmax
         temp = zeros(nr,1);
         w = find(data(:,tel) == t);
@@ -157,9 +199,7 @@ if and(length(data(1,:)) == 3,length(data(:,1))>0)
             wtemp2 = find(data(w,2)>y0+rmax & data(w,2)<y1-rmax);
             w4 = intersect(wtemp1,wtemp2);
             nw4 = length(w4);
-
             flag = one;
-
             if nw4>0
                 flag(w4)=0;
                 for i = 1:nw
@@ -180,15 +220,12 @@ if and(length(data(1,:)) == 3,length(data(:,1))>0)
                             % pos0 -- ifd it's near corners. Check all four quadrants
                             tx=0;ty=0;tx2=0;ty2=0;
                             %checkquadrant,pos0,xref,yref,hix=hix,hiy=hiy,nr,rvec,rsqr,rmax,thetax=thetax,thetay=thetay
-
                             theta1 = checkquadrant(pos0,x0,y0,0,0,nr,rvec,rsqr,rmax,tx,ty);
                             theta2 = checkquadrant(pos0,x1,y0,1,0,nr,rvec,rsqr,rmax,tx2,ty);
                             theta3 = checkquadrant(pos0,x1,y1,1,1,nr,rvec,rsqr,rmax,tx2,ty2);
                             theta4 = checkquadrant(pos0,x0,y1,0,1,nr,rvec,rsqr,rmax,tx,ty2);
-
                             theta = theta1+theta2+theta3+theta4;
                         end
-
                         area = theta.*rvec*deltar; %area of each ring
                         w3 = find(area<1e-9);
                         nw3=length(w3);
@@ -212,18 +249,14 @@ if and(length(data(1,:)) == 3,length(data(:,1))>0)
     tmax=dt*tmax;tmin=dt*tmin;
     result(:,2) = result(:,2)/(density*(tmax-tmin+1));
     %plot(result(:,1),result(:,2))
-
     %toc
 else
     result = [0 0];
 end
-
 end
-
 %--------------------------------------------------------------------------
 % local function
 function theta = checkquadrant(pos0,xref,yref,hix,hiy,nr,rvec,rsqr,rmax,thetax,thetay)
-
 % This function calculates the angle(in radians) of the arc that falls
 % within this quadrant; used later for normalization.
 %
@@ -238,11 +271,9 @@ function theta = checkquadrant(pos0,xref,yref,hix,hiy,nr,rvec,rsqr,rmax,thetax,t
 % nr,rvec,rsqr,ramax all same as regular program
 % thetax & thetay are used to pass variables which will be used for other
 %                 quadrants and thus save time recalculating them
-
 ind1 = rvec<=0.001;
 rvec2=rvec;
 rvec2(ind1,:)=0.001;% to avoid divide-by-zero
-
 if thetax == 0
     if hix == 1
         if (xref - rmax) >= pos0(1)
@@ -260,7 +291,6 @@ if thetax == 0
         end
     end
 end
-
 if thetay == 0
     if hiy == 1
         if (yref-rmax) > pos0(1,2)
@@ -278,7 +308,6 @@ if thetay == 0
         end
     end
 end
-
 theta = (zeros(nr,1) + 0.5*pi) - thetax - thetay;
 dcorner = pos0 - [xref,yref];
 cornerdist = sum(dcorner.^2);

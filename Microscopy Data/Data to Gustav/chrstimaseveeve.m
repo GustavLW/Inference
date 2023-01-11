@@ -2,8 +2,8 @@ clc
 clear all
 tmp_dir = dir([cd '\Tracks\558']);
 tmp_dir = tmp_dir(3:end);
-d = 3;
-dstring = tmp_dir(12*(d-1)+4).name;
+
+dstring = tmp_dir(1).name;
 data = readtable([cd '\Tracks\558\' dstring]);
 
 clean = 1;
@@ -91,7 +91,7 @@ end
 r = result(:,1);
 g = smoothdata(result(:,2));
 plot(r,g/mean(g(120:end)),'k')
-xlabel('r')
+xlabel('r (pixels)')
 ylabel('g(r)')
 grid on
 

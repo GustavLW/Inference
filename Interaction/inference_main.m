@@ -14,23 +14,23 @@ addpath(([fileparts(pwd) '\Interaction']))
 df = dir(DataFolder);
 df = df(3:end);
 
-load([DataFolder '\' df(7).name])
+load([DataFolder '\' df(9).name])
 K     = length(observed_cells{end});
 freq  = observed_cells{end-1}(1);
 facit = observed_cells{end-1}(5:end-(length(observed_cells)-2));
 
 A = 2*feature('numcores');  % number of optimization agents
 Q = 1;
-T = 90;  % number of generations
+T = 120;  % number of generations
 L = freq/12;
-S = 6;
+S = 15;
 agents   = cell(A,1);
-pot_type = 1;
+pot_type = 2;
 
 RD = calculate_radial_distribution(observed_cells,1);
-sim_an1   = @(t) (1/3)*exp(-4./((12*t).^(1/4)));
-sim_an2   = @(t) (1/3)*exp(-2./((9*t).^(1/6)));
-
+sim_an1   = @(t) (1/3)*(1./(1+exp(2-3*t/T)));
+sim_an2   = @(t) (1/3)*(1./(1+exp(4-6*t/T)));
+inertia  = (1:A)./((1:A));
 repeated_trials = cell(Q,2);
 %%
 clc
@@ -39,13 +39,16 @@ for q = 1:Q
     for a = 1:A
         agents{a} = create_agent(pot_type,T);
     end
-    %agents{1}.U_param = log(facit).*ones(T,length(facit));
+    %agents{1}.U_param  = (log(facit) + 0.0625*randn(1,6)).*ones(T,length(facit));
     best_ever_fitness  = -Inf*ones(T,1);
     best_ever_penalty  = zeros(T,1);
     best_ever_dev      = zeros(T,1);
     best_ever_location = zeros(size(agents{randi(a)}.U_best)).*ones(T,1); % arbitrary initiation
     best_ever_index    = 0;
     for t = 1:T-1
+        if mod(t,T/5) == 0
+            agents{1}.U_param(t:T)  = (log(facit) + 0.0625*randn(1,6)).*ones(T-t+1,length(facit));
+        end
         % agent specific calculations
         parfor a = 1:A
             [agent,~] = score_agent(RD,agents{a},t,observed_cells,L,S);
@@ -58,15 +61,14 @@ for q = 1:Q
             end
         end
         % propagation
-        inertia  = 1:A;
         best_tmp = zeros(1,A);
         for a = 1:A
             if t > 1
                 agents{a}.U_velo(t,:)  = 2*inertia(a)*(1 - sim_an1(t) - sim_an2(t))*agents{a}.U_velo(t,:)...
-                    + 0.2*(4+rand)*(1/250 + sim_an1(t))*(agents{a}.U_best(t,:)   - agents{a}.U_param(t,:))...
-                    + 0.2*(4+rand)*(1/250 + sim_an2(t))*(best_ever_location(t,:) - agents{a}.U_param(t,:));
+                    + 0.25*(1/5000 + sim_an1(t))*(agents{a}.U_best(t,:)   - agents{a}.U_param(t,:))...
+                    + 0.25*(1/5000 + sim_an2(t))*(best_ever_location(t,:) - agents{a}.U_param(t,:));
             end
-            vmax = 0.05*length(agents{a}.U_velo(t,:));
+            vmax = 0.15*length(agents{a}.U_velo(t,:));
             if norm(agents{a}.U_velo(t,:)) > vmax
                 agents{a}.U_velo(t,:) = vmax*agents{a}.U_velo(t,:)/norm(agents{a}.U_velo(t,:));
             end
@@ -172,7 +174,7 @@ for q = 1:1
     plot(x,U_pot(x,B_param),'b')
     plot([0.5 4],[0 0],'k')
     grid on
-    axis([0.5 4 facit(1)*[-2 5]])
+    axis([0.5 4 min(U_pot(x,facit))*[2 -5]])
     xlabel('Distance')
     ylabel('Potential energy')
     title('Winning potential compared to underlying')
@@ -180,9 +182,11 @@ for q = 1:1
     drawnow;
     pause(1)
 end
-%% GRAFIK FÖR MORSE
+%% GRAFIK FÖR ANIMERA LÖSNINGAR
 
 close all
+figure(1)
+filename = 'particle_swarm_result.gif';
 for t = 1:1:T
     current_params = zeros(A,4*pot_type - 2);
     current_best   = current_params;
@@ -209,6 +213,8 @@ for t = 1:1:T
         plot(log(facit(1)),log(facit(4)),'rd')
         axis([log(facit(1))-5 log(facit(1))+5 log(facit(4))-5 log(facit(4))+5])
         grid on
+        xlabel('k_1')
+        ylabel('k_2')
         subplot(2,2,2)
         hold off
         scatter(current_params(:,2),current_params(:,5),'k*')
@@ -218,6 +224,8 @@ for t = 1:1:T
         plot(log(facit(2)),log(facit(5)),'rd')
         axis([log(facit(2))-5 log(facit(2))+5 log(facit(5))-5 log(facit(5))+5])
         grid on
+        xlabel('l_1')
+        ylabel('l_2')
         subplot(2,2,3)
         hold off
         scatter(current_params(:,3),current_params(:,6),'k*')
@@ -227,11 +235,30 @@ for t = 1:1:T
         plot(log(facit(3)),log(facit(6)),'rd')
         axis([log(facit(3))-5 log(facit(3))+5 log(facit(6))-5 log(facit(6))+5])
         grid on
-
-
+        xlabel('a_1')
+        ylabel('a_2')
+        subplot(2,2,4)
+        x = linspace(0,5,1001);
+        hold off
+        plot(x,U_pot(x,exp(best_ever_location(t,:))),'r')
+        hold on
+        plot([0.5 4],[0 0],'k')
+        grid on
+        axis([0.5 4 min(U_pot(x,facit))*[2 -5]])
+        xlabel('Distance')
+        ylabel('Potential energy')
     end
     drawnow;
-    pause(0.01)
+    frame = getframe(1);
+      im = frame2im(frame);
+      [imind,cm] = rgb2ind(im,256);
+    if t == 1
+         imwrite(imind,cm,filename,'gif', 'Loopcount',inf);
+    else
+        imwrite(imind,cm,filename,'gif','WriteMode','append');
+
+    end
 end
+
 
 

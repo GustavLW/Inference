@@ -29,11 +29,11 @@ end
 
 [penalty,dev] = penalize_agent(RD,forecast_array,agent.U_param(t,:),t);
 
-agent.fitness(t)  = ell;
+agent.fitness(t)  = ell - dev;
 agent.penalty(t)  = penalty;
-agent.dev(t)      = dev;
 if t > 1
-    agent.Bpenalty(t) = penalize_agent(RD,agent.Bdev(t),agent.U_best(t,:),t);
+    [benalty,~]     = penalize_agent(RD,0,agent.U_best(t,:),t);
+    agent.Bpenalty(t) = benalty;
 end
 
 

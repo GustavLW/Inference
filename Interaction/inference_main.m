@@ -21,9 +21,9 @@ facit = observed_cells{end-1}(5:end-(length(observed_cells)-2));
 
 A = 2*feature('numcores');  % number of optimization agents
 Q = 1;
-T = 120;  % number of generations
+T = 80;  % number of generations
 L = freq/12;
-S = 15;
+S = 18;
 agents   = cell(A,1);
 pot_type = 2;
 
@@ -37,18 +37,15 @@ clc
 tic
 for q = 1:Q
     for a = 1:A
-        agents{a} = create_agent(pot_type,T);
+        agents{a}          = create_agent(pot_type,T);
+        random_point       = rand_sphere_shell([pi*rand(1,length(facit)-2) 2*pi*rand],1);
+        agents{a}.U_param  = (log(facit) + random_point).*ones(T,length(facit));
     end
-    %agents{1}.U_param  = (log(facit) + 0.0625*randn(1,6)).*ones(T,length(facit));
     best_ever_fitness  = -Inf*ones(T,1);
     best_ever_penalty  = zeros(T,1);
-    best_ever_dev      = zeros(T,1);
     best_ever_location = zeros(size(agents{randi(a)}.U_best)).*ones(T,1); % arbitrary initiation
     best_ever_index    = 0;
     for t = 1:T-1
-        if mod(t,T/5) == 0
-            agents{1}.U_param(t:T)  = (log(facit) + 0.0625*randn(1,6)).*ones(T-t+1,length(facit));
-        end
         % agent specific calculations
         parfor a = 1:A
             [agent,~] = score_agent(RD,agents{a},t,observed_cells,L,S);
@@ -56,7 +53,6 @@ for q = 1:Q
             if  agents{a}.fitness(t) - agents{a}.penalty(t) > agents{a}.Bfitness(t) - agents{a}.Bpenalty(t)
                 agents{a}.Bfitness(t:T) = agents{a}.fitness(t);
                 agents{a}.Bpenalty(t:T) = agents{a}.penalty(t);
-                agents{a}.Bdev(t:T)     = agents{a}.dev(t);
                 agents{a}.U_best(t:T,:) = agents{a}.U_param(t,:).*ones(T-t+1,1);
             end
         end
@@ -77,18 +73,16 @@ for q = 1:Q
         end
         [best_now_fitness,best_index] = max(best_tmp);
         if best_now_fitness > best_ever_fitness(t) - best_ever_penalty(t)
-            best_ever_fitness(t+1)    = agents{best_index}.fitness(t);
-            best_ever_penalty(t+1)    = agents{best_index}.penalty(t);
-            best_ever_dev(t+1)        = agents{best_index}.dev(t);
+            best_ever_fitness(t+1)    = agents{best_index}.Bfitness(t);
+            best_ever_penalty(t+1)    = agents{best_index}.Bpenalty(t);
             best_ever_location(t+1,:) = agents{best_index}.U_best(t,:);
             best_ever_index           = best_index;
             new_best                  = 0;
         else
             new_best                  = new_best + 1;
             best_ever_fitness(t+1)    = best_ever_fitness(t);
-            best_ever_dev(t+1)        = best_ever_dev(t)*1.01^new_best; % in the case of spurious mishaps, these guys get less valuable as time goes on
             best_ever_location(t+1,:) = best_ever_location(t,:);
-            best_ever_penalty(t+1)    = penalize_agent(RD,best_ever_dev(t+1),best_ever_location(t+1,:),t+1);
+            best_ever_penalty(t+1)    = penalize_agent(RD,0,best_ever_location(t+1,:),t);
         end
 
         disp(['Iteration ' num2str(t) '/' num2str(T) ' of trial ' num2str(q) '/' num2str(Q) '.'])
@@ -161,7 +155,7 @@ for k = 1:K-1
 end
 disp([dF dW])
 %% COMPARE WINNING POTENTIAL COMPARED TO UNDERLYING
-for q = 1:1
+for q = 1:Q
     hold off
     x       = linspace(0,5,1001);
     xs      = linspace(0,5,21);
@@ -183,11 +177,13 @@ for q = 1:1
     pause(1)
 end
 %% GRAFIK FÖR ANIMERA LÖSNINGAR
-
+clc
 close all
-figure(1)
+figure('units','centimeters','position',[0 0 25 25]);
 filename = 'particle_swarm_result.gif';
-for t = 1:1:T
+c = linspace(1,10,A);
+zoom = 2;
+for t = 2:T
     current_params = zeros(A,4*pot_type - 2);
     current_best   = current_params;
     for a = 1:A
@@ -196,52 +192,58 @@ for t = 1:1:T
     end
     if size(agents{a}.U_param(t,:)) < 4
         hold off
-        scatter(current_params(:,1),current_params(:,2),'k*')
+        scatter(current_params(:,1),current_params(:,2),[],c,'*')
         hold on
-        scatter(current_best(:,1),current_best(:,2),'b*')
-        scatter(best_ever_location(t,1),best_ever_location(t,2),'ro')
-        plot(log(facit(1)),log(facit(2)),'rd')
+        scatter(current_best(:,1),current_best(:,2),[],c,'o')
+        scatter(best_ever_location(t,1),best_ever_location(t,2),25,'red','o')
+        scatter(log(facit(1)),log(facit(2)),25,'red','s')
         axis([-15 -0 0 5])
         grid on
     else
         subplot(2,2,1)
         hold off
-        scatter(current_params(:,1),current_params(:,4),'k*')
+        scatter(current_params(:,1),current_params(:,4),[],c,'*')
         hold on
-        scatter(current_best(:,1),current_best(:,4),'b*')
-        scatter(best_ever_location(t,1),best_ever_location(t,4),'ro')
-        plot(log(facit(1)),log(facit(4)),'rd')
-        axis([log(facit(1))-5 log(facit(1))+5 log(facit(4))-5 log(facit(4))+5])
+        scatter(current_best(:,1),current_best(:,4),[],c,'o')
+        scatter(best_ever_location(t,1),best_ever_location(t,4),50,'red','o')
+        scatter(log(facit(1)),log(facit(4)),100,'red','s')
+        axis([log(facit(1))-zoom log(facit(1))+zoom log(facit(4))-zoom log(facit(4))+zoom])
         grid on
         xlabel('k_1')
         ylabel('k_2')
         subplot(2,2,2)
         hold off
-        scatter(current_params(:,2),current_params(:,5),'k*')
+        scatter(current_params(:,2),current_params(:,5),[],c,'*')
         hold on
-        scatter(current_best(:,2),current_best(:,5),'b*')
-        scatter(best_ever_location(t,2),best_ever_location(t,5),'ro')
-        plot(log(facit(2)),log(facit(5)),'rd')
-        axis([log(facit(2))-5 log(facit(2))+5 log(facit(5))-5 log(facit(5))+5])
+        scatter(current_best(:,2),current_best(:,5),[],c,'o')
+        scatter(best_ever_location(t,2),best_ever_location(t,5),50,'red','o')
+        scatter(log(facit(2)),log(facit(5)),100,'red','s')
+        axis([log(facit(2))-zoom log(facit(2))+zoom log(facit(5))-zoom log(facit(5))+zoom])
         grid on
         xlabel('l_1')
         ylabel('l_2')
         subplot(2,2,3)
         hold off
-        scatter(current_params(:,3),current_params(:,6),'k*')
+        scatter(current_params(:,3),current_params(:,6),[],c,'*')
         hold on
-        scatter(current_best(:,3),current_best(:,6),'b*')
-        scatter(best_ever_location(t,3),best_ever_location(t,6),'ro')
-        plot(log(facit(3)),log(facit(6)),'rd')
-        axis([log(facit(3))-5 log(facit(3))+5 log(facit(6))-5 log(facit(6))+5])
+        scatter(current_best(:,3),current_best(:,6),[],c,'o')
+        scatter(best_ever_location(t,3),best_ever_location(t,6),50,'red','o')
+        scatter(log(facit(3)),log(facit(6)),100,'red','s')
+        axis([log(facit(3))-zoom log(facit(3))+zoom log(facit(6))-zoom log(facit(6))+zoom])
         grid on
         xlabel('a_1')
         ylabel('a_2')
         subplot(2,2,4)
-        x = linspace(0,5,1001);
         hold off
-        plot(x,U_pot(x,exp(best_ever_location(t,:))),'r')
+        x       = linspace(0,5,1001);
+        xs      = linspace(0,5,21);
+        facit = observed_cells{end-1}(5:end-(length(observed_cells)-2));
+        B_param = (repeated_trials{q,1});
+        plot(xs,U_pot(xs,facit),'ro')
         hold on
+        plot(xs+0.125,U_pot(xs+0.125,B_param),'bd')
+        plot(x,U_pot(x,facit),'r')
+        plot(x,U_pot(x,B_param),'b')
         plot([0.5 4],[0 0],'k')
         grid on
         axis([0.5 4 min(U_pot(x,facit))*[2 -5]])
@@ -259,6 +261,30 @@ for t = 1:1:T
 
     end
 end
+
+function point = rand_sphere_shell(rang,r_radii)
+    n = length(rang) + 1;
+    point    = ones(1,n);
+    point(2) = sin(rang(1));
+    point(end) = prod(sin(rang));
+    if n > 3
+        for i = 3:n-1
+            point(i) = point(i-1).*sin(rang(i-1));
+        end
+    end
+    point(1:end-1) = point(1:end-1).*(cos(rang(1:end)));
+    point = r_radii*point;
+end
+
+
+
+
+
+
+
+
+
+
 
 
 

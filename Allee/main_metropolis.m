@@ -5,7 +5,7 @@ desired_cell_line = 'C:\Users\Gustav\Documents\MATLAB\forskning\Data to Gustav\D
 data_folder = dir(desired_cell_line);
 data_folder = data_folder(3:end);
 mkdir(desired_cell_line(96:99))
-
+%%
 tic
 for experiment = 3:3:length(data_folder)
     disp(['Begin inference on dataset ' regexp(data_folder(experiment).name,'[^_]+', 'match','once') ';'])

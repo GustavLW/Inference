@@ -14,9 +14,12 @@ df = dir(DataFolder);
 df   = df(3:end);
 o0   = 0;
 o1   = 0;
-save = 0;
+save = 1;
 MCMC = 0;
-for d = length(df)-2:length(df)
+for d = length(df)-2:length(df)-2
+    clc
+    close all
+    h = figure;
     try
         load([DataFolder '\' df(d).name])
         [ECAET,birth_event_list,death_event_list] = get_locations_and_birth_events(observed_cells,1);
@@ -67,38 +70,53 @@ for d = length(df)-2:length(df)
                 all_pi(m,q) = pi_old;
             end
         end
-        if save == 1
-            clc
-            close all
-            h = figure;
 
-            %facit = [NaN NaN];
-            [~,I] = max(mean(all_pi(M/2:end,:)));
-            max_likelihood = max(all_pi(:,I));
-            [~,Indices] = sort(all_pi(:,I));
-            Indices = Indices(end-M/10:end);
-            subplot(2,1,1)
-            histogram(all_l0(Indices,I))
-            hold on
-            plot([log(facit(1)) log(facit(1))],[0 40],'k--')
-            %xlim([-20 0])
-            subplot(2,1,2)
-            histogram(all_l1(Indices,I))
-            hold on
-            plot([log(facit(2)) log(facit(2))],[0 40],'k--')
-            %xlim([-20 0])
-            figname = ['FIG' num2str(d)];
+        [~,I] = max(mean(all_pi(M/2:end,:)));
+        max_likelihood = max(all_pi(:,I));
+        [~,Indices] = sort(all_pi(:,I));
+        Indices = Indices(end-M/10:end);
+        subplot(2,1,1)
+        histogram(all_l0(Indices,I))
+        hold on
+        plot([log(facit(1)) log(facit(1))],[0 40],'k--')
+        %xlim([-20 0])
+        subplot(2,1,2)
+        histogram(all_l1(Indices,I))
+        hold on
+        plot([log(facit(2)) log(facit(2))],[0 40],'k--')
+        %xlim([-20 0])
+        if save == 1
+            figname = ['MCMC_' num2str(d)];
             saveas(h,figname,'png');
         end
     elseif MCMC == 0
-        [L0,L1] = meshgrid(-15:1:-5,-15:1:-5);
+        rl0 = round(log(facit(1)));
+        rl1 = round(log(facit(2)));
+        plot_range = 5;
+        [L0,L1] = meshgrid(linspace(rl0-plot_range,rl0+plot_range,201),linspace(rl1-plot_range,rl1+plot_range,201));
         Z = L0;
         for i = 1:size(L0,1)
             for j = 1:size(L1,1)
                 Z(i,j)       = likelihood_handler(rho,dbeta,D,dt,2,exp([L0(i,j) L1(i,j)]));
             end
         end
-        
+        LAMBDA = likelihood_handler(rho,dbeta,D,dt,2,[facit(1) facit(2)]);
+
+        log_it = 1;
+        hold off
+        surf(L0,L1,repeated_sqrt(Z,log_it),'EdgeColor','none')
+        hold on
+        scatter3(log(facit(1)),log(facit(2)),repeated_sqrt(LAMBDA,log_it),'red','filled')
+        xlabel('\lambda_0')
+        ylabel('\lambda_1')
+        xlim([rl0-plot_range rl0+plot_range])
+        ylim([rl1-plot_range rl1+plot_range])
+        view(0,90)
+        if save == 1
+            figname = ['likelihood_' num2str(d)];
+            saveas(h,figname,'png');
+        end
+
        
     end
 end
@@ -109,8 +127,9 @@ o0K = o0 + sum(death_event_list(:,2));
 o1K = o1 + sum(death_event_list(:,1)-death_event_list(:,2));
 
 death_pdf = @(r) (1/beta(o0K,o1K))*(1-exp(-dt*r)).^(o0K-1).*exp(-(o1K-1)*dt*r);
-max_death = max(death_pdf(r));
 r = linspace(0,3*facit(3),10001);
+max_death = max(death_pdf(r));
+
 plot(r,death_pdf(r),'k','LineWidth',1)
 hold on
 plot(facit(3)*[1 1],1.5*[0 max_death],'r--','LineWidth',1)
@@ -134,29 +153,7 @@ ylim([0 2*facit(2)])
 
 %%
 
-rl0 = round(log(facit(1)));
-rl1 = round(log(facit(2)));
-plot_range = 5;
-[L0,L1] = meshgrid(linspace(rl0-plot_range,rl0+plot_range,201),linspace(rl1-plot_range,rl1+plot_range,201));
-        Z = L0;
-        for i = 1:size(L0,1)
-            for j = 1:size(L1,1)
-                Z(i,j)       = likelihood_handler(rho,dbeta,D,dt,2,exp([L0(i,j) L1(i,j)]));
-            end
-        end     
-LAMBDA = likelihood_handler(rho,dbeta,D,dt,2,[facit(1) facit(2)]);
-%%
-for log_it = 0:1
-    hold off
-    surf(L0,L1,repeated_sqrt(Z,log_it),'EdgeColor','none')
-    hold on
-    scatter3(log(facit(1)),log(facit(2)),repeated_sqrt(LAMBDA,log_it),'red','filled')
-    xlabel('\lambda_0')
-    ylabel('\lambda_1')
-    view(0,90)
-    drawnow;
-    pause(1)
-end
+
 
 function Z = repeated_sqrt(Z,iterations)
 tmp = max(Z)-Z;

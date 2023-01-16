@@ -21,7 +21,7 @@ facit = observed_cells{end-1}(5:end-(length(observed_cells)-2));
 
 A = 2*feature('numcores');  % number of optimization agents
 Q = 1;
-T = 80;  % number of generations
+T = 2;  % number of generations
 L = freq/12;
 S = 18;
 agents   = cell(A,1);
@@ -38,7 +38,7 @@ tic
 for q = 1:Q
     for a = 1:A
         agents{a}          = create_agent(pot_type,T);
-        random_point       = rand_sphere_shell([pi*rand(1,length(facit)-2) 2*pi*rand],1);
+        random_point       = rand_sphere_shell(length(facit),1);
         agents{a}.U_param  = (log(facit) + random_point).*ones(T,length(facit));
     end
     best_ever_fitness  = -Inf*ones(T,1);
@@ -262,8 +262,8 @@ for t = 2:T
     end
 end
 
-function point = rand_sphere_shell(rang,r_radii)
-    n = length(rang) + 1;
+function point = rand_sphere_shell(n,r_radii)
+    rang = [pi*rand(1,n-2) 2*pi*rand];
     point    = ones(1,n);
     point(2) = sin(rang(1));
     point(end) = prod(sin(rang));

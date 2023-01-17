@@ -16,10 +16,10 @@ o0   = 0;
 o1   = 0;
 save = 1;
 MCMC = 0;
-for d = length(df)-2:length(df)-2
+for d = length(df)-9:length(df)
     clc
     close all
-    h = figure;
+    h = figure('units','centimeters','position',[0 0 16.8 21]);
     try
         load([DataFolder '\' df(d).name])
         [ECAET,birth_event_list,death_event_list] = get_locations_and_birth_events(observed_cells,1);
@@ -92,73 +92,69 @@ for d = length(df)-2:length(df)-2
     elseif MCMC == 0
         rl0 = round(log(facit(1)));
         rl1 = round(log(facit(2)));
-        plot_range = 5;
-        [L0,L1] = meshgrid(linspace(rl0-plot_range,rl0+plot_range,201),linspace(rl1-plot_range,rl1+plot_range,201));
+        plot_range = 12;
+        l0linspace = linspace(rl0-plot_range,rl0+plot_range,401);
+        l1linspace = linspace(rl1-plot_range,rl1+plot_range,401);
+        [L0,L1] = meshgrid(l0linspace,l1linspace);
         Z = L0;
         for i = 1:size(L0,1)
             for j = 1:size(L1,1)
                 Z(i,j)       = likelihood_handler(rho,dbeta,D,dt,2,exp([L0(i,j) L1(i,j)]));
             end
         end
+        [m1,i1] = max(Z);
+        [~,i2] = max(m1);
+        ML = [i1(i2) i2];
         LAMBDA = likelihood_handler(rho,dbeta,D,dt,2,[facit(1) facit(2)]);
-
+        MAMBDA = likelihood_handler(rho,dbeta,D,dt,2,exp([l0linspace(ML(1)) l1linspace(ML(2))]));
         log_it = 1;
+        subplot(3,2,1:4)
         hold off
         surf(L0,L1,repeated_sqrt(Z,log_it),'EdgeColor','none')
         hold on
         scatter3(log(facit(1)),log(facit(2)),repeated_sqrt(LAMBDA,log_it),'red','filled')
+        scatter3(l0linspace(ML(2)),l1linspace(ML(1)),repeated_sqrt(MAMBDA,log_it),'blue','filled')
         xlabel('\lambda_0')
         ylabel('\lambda_1')
-        xlim([rl0-plot_range rl0+plot_range])
-        ylim([rl1-plot_range rl1+plot_range])
+        xlim([rl0-plot_range/3 rl0+plot_range/3])
+        ylim([rl1-plot_range/3 rl1+plot_range/3])
         view(0,90)
+
+        subplot(3,2,5:6)
+        o0K = o0 + sum(death_event_list(:,2));
+        o1K = o1 + sum(death_event_list(:,1)-death_event_list(:,2));
+        death_pdf = @(r) (1/beta(o0K,o1K))*(1-exp(-dt*r)).^(o0K-1).*exp(-(o1K-1)*dt*r);
+        r = linspace(0,3*facit(3),10001);
+        max_death = max(max(death_pdf(r)),10^100);
+        plot(r,death_pdf(r),'k','LineWidth',1)
+        hold on
+        plot(facit(3)*[1 1],1.5*[0 max_death],'r--','LineWidth',1)
+        xlim([0 max(r)])
+        ylim([0 1.25*max_death])
+        xlabel('\omega')
+        ylabel('p(\omega|X)')
+        grid on
+
         if save == 1
             figname = ['likelihood_' num2str(d)];
             saveas(h,figname,'png');
-        end
-
-       
+        end 
     end
 end
 
 %%
-clf
-o0K = o0 + sum(death_event_list(:,2));
-o1K = o1 + sum(death_event_list(:,1)-death_event_list(:,2));
-
-death_pdf = @(r) (1/beta(o0K,o1K))*(1-exp(-dt*r)).^(o0K-1).*exp(-(o1K-1)*dt*r);
+death_pdf = @(r) log((1-exp(-dt*r)).^(o0K-1).*exp(-(o1K-1)*dt*r));
 r = linspace(0,3*facit(3),10001);
-max_death = max(death_pdf(r));
 
 plot(r,death_pdf(r),'k','LineWidth',1)
-hold on
-plot(facit(3)*[1 1],1.5*[0 max_death],'r--','LineWidth',1)
-xlim([0 max(r)])
-ylim([0 1.25*max_death])
-xlabel('\omega')
-ylabel('p(\omega|X)')
-grid on
-%%
-facit = observed_cells{end-1}(2:4);
-for q = 1:Q
-    plot3(exp(all_l0(2:end,q)),exp(all_l1(2:end,q)),-log(log(log(-all_pi(2:end,q)))))
-    xlabel('\lambda_0')
-    ylabel('\lambda_1')
-    hold on
-end
-LAMBDA = likelihood_handler(rho,dbeta,D,dt,2,[facit(1) facit(2)]);
-scatter3((facit(1)),(facit(2)),-log(log(log(-LAMBDA))),'red','filled')
-xlim([0 2*facit(1)])
-ylim([0 2*facit(2)])
-
-%%
-
 
 
 function Z = repeated_sqrt(Z,iterations)
 tmp = max(Z)-Z;
 for i = 1:iterations
-    tmp = log(1+(tmp).^(2^i));
+    tmp = log(1+(tmp).^(2^i))/4;
 end
 Z = -tmp;
 end
+
+

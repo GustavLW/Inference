@@ -14,16 +14,16 @@ addpath(([fileparts(pwd) '\Interaction']))
 df = dir(DataFolder);
 df = df(3:end);
 
-load([DataFolder '\' df(9).name])
+load([DataFolder '\' df(end-1).name])
 K     = length(observed_cells{end});
 freq  = observed_cells{end-1}(1);
 facit = observed_cells{end-1}(5:end-(length(observed_cells)-2));
 
 A = 2*feature('numcores');  % number of optimization agents
-Q = 1;
-T = 2;  % number of generations
+Q = 3;
+T = 50;  % number of generations
 L = freq/12;
-S = 18;
+S = 20;
 agents   = cell(A,1);
 pot_type = 2;
 
@@ -32,13 +32,14 @@ sim_an1   = @(t) (1/3)*(1./(1+exp(2-3*t/T)));
 sim_an2   = @(t) (1/3)*(1./(1+exp(4-6*t/T)));
 inertia  = (1:A)./((1:A));
 repeated_trials = cell(Q,2);
+
 %%
 clc
 tic
 for q = 1:Q
     for a = 1:A
         agents{a}          = create_agent(pot_type,T);
-        random_point       = rand_sphere_shell(length(facit),1);
+        random_point       = rand_sphere_shell(length(facit),2^(q-2));
         agents{a}.U_param  = (log(facit) + random_point).*ones(T,length(facit));
     end
     best_ever_fitness  = -Inf*ones(T,1);
@@ -116,9 +117,9 @@ end
 RDf = calculate_radial_distribution(forecast_cells,1);
 
 %%% PROPOSAL %%%
-
+q = 1;
 forecast_cells = observed_cells;
-B_param          = repeated_trials{1,1};
+B_param          = repeated_trials{q,1};
 [alpha,beta,~,~] = diffusion_inference(observed_cells,1,B_param);
 sigmaB           = sqrt(beta./alpha)';
 N                = (length(observed_cells)-2);
@@ -182,7 +183,7 @@ close all
 figure('units','centimeters','position',[0 0 25 25]);
 filename = 'particle_swarm_result.gif';
 c = linspace(1,10,A);
-zoom = 2;
+zoom = 7;
 for t = 2:T
     current_params = zeros(A,4*pot_type - 2);
     current_best   = current_params;
@@ -261,6 +262,15 @@ for t = 2:T
 
     end
 end
+
+%%
+clf
+a = 9;
+
+    plot(log(agents{a}.penalty))
+    hold on
+    drawnow;
+
 
 function point = rand_sphere_shell(n,r_radii)
     rang = [pi*rand(1,n-2) 2*pi*rand];

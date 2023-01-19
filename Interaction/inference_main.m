@@ -19,11 +19,11 @@ K     = length(observed_cells{end});
 freq  = observed_cells{end-1}(1);
 facit = observed_cells{end-1}(5:end-(length(observed_cells)-2));
 
-A = 2*feature('numcores');  % number of optimization agents
-Q = 3;
-T = 50;  % number of generations
+A = 1*feature('numcores');  % number of optimization agents
+Q = 10;
+T = 2;  % number of generations
 L = freq/12;
-S = 20;
+S = 1;
 agents   = cell(A,1);
 pot_type = 2;
 
@@ -33,14 +33,18 @@ sim_an2   = @(t) (1/3)*(1./(1+exp(4-6*t/T)));
 inertia  = (1:A)./((1:A));
 repeated_trials = cell(Q,2);
 
+
+para_ranges = log(facit') + 1*[-1 1; -1 1; -1 1; -1 1; -1 1; -1 1];
+s1 = hyper_cube_sampling(Q,para_ranges);
+
 %%
 clc
 tic
 for q = 1:Q
     for a = 1:A
         agents{a}          = create_agent(pot_type,T);
-        random_point       = rand_sphere_shell(length(facit),2^(q-2));
-        agents{a}.U_param  = (log(facit) + random_point).*ones(T,length(facit));
+        random_point       = rand_sphere_shell(length(facit),0.5);
+        agents{a}.U_param  = (s1(q,:) + random_point).*ones(T,length(facit));
     end
     best_ever_fitness  = -Inf*ones(T,1);
     best_ever_penalty  = zeros(T,1);
@@ -119,7 +123,7 @@ RDf = calculate_radial_distribution(forecast_cells,1);
 %%% PROPOSAL %%%
 q = 1;
 forecast_cells = observed_cells;
-B_param          = repeated_trials{q,1};
+B_param          = exp(repeated_trials{q,1});
 [alpha,beta,~,~] = diffusion_inference(observed_cells,1,B_param);
 sigmaB           = sqrt(beta./alpha)';
 N                = (length(observed_cells)-2);
@@ -183,7 +187,7 @@ close all
 figure('units','centimeters','position',[0 0 25 25]);
 filename = 'particle_swarm_result.gif';
 c = linspace(1,10,A);
-zoom = 7;
+zoom = 3;
 for t = 2:T
     current_params = zeros(A,4*pot_type - 2);
     current_best   = current_params;
@@ -206,7 +210,7 @@ for t = 2:T
         scatter(current_params(:,1),current_params(:,4),[],c,'*')
         hold on
         scatter(current_best(:,1),current_best(:,4),[],c,'o')
-        scatter(best_ever_location(t,1),best_ever_location(t,4),50,'red','o')
+        plot(best_ever_location(2:t,1),best_ever_location(2:t,4),'r--o')
         scatter(log(facit(1)),log(facit(4)),100,'red','s')
         axis([log(facit(1))-zoom log(facit(1))+zoom log(facit(4))-zoom log(facit(4))+zoom])
         grid on
@@ -217,7 +221,7 @@ for t = 2:T
         scatter(current_params(:,2),current_params(:,5),[],c,'*')
         hold on
         scatter(current_best(:,2),current_best(:,5),[],c,'o')
-        scatter(best_ever_location(t,2),best_ever_location(t,5),50,'red','o')
+        plot(best_ever_location(2:t,2),best_ever_location(2:t,5),'r--o')
         scatter(log(facit(2)),log(facit(5)),100,'red','s')
         axis([log(facit(2))-zoom log(facit(2))+zoom log(facit(5))-zoom log(facit(5))+zoom])
         grid on
@@ -228,7 +232,7 @@ for t = 2:T
         scatter(current_params(:,3),current_params(:,6),[],c,'*')
         hold on
         scatter(current_best(:,3),current_best(:,6),[],c,'o')
-        scatter(best_ever_location(t,3),best_ever_location(t,6),50,'red','o')
+        plot(best_ever_location(2:t,3),best_ever_location(2:t,6),'r--o')
         scatter(log(facit(3)),log(facit(6)),100,'red','s')
         axis([log(facit(3))-zoom log(facit(3))+zoom log(facit(6))-zoom log(facit(6))+zoom])
         grid on
@@ -262,15 +266,14 @@ for t = 2:T
 
     end
 end
+    
+%%
+
+
+random_point       = rand_sphere_shell(length(facit),1/2)
+
 
 %%
-clf
-a = 9;
-
-    plot(log(agents{a}.penalty))
-    hold on
-    drawnow;
-
 
 function point = rand_sphere_shell(n,r_radii)
     rang = [pi*rand(1,n-2) 2*pi*rand];

@@ -23,11 +23,11 @@ end
 
 
 if length(U_param) > 4
-    g1 = [U_param(1) - U_param(4);
-         U_param(3) - U_param(6);
-         U_param(5) - U_param(2)];
+    g1 = [exp(U_param(4)) - exp(U_param(1));
+         exp(U_param(6)) - exp(U_param(3));
+         exp(U_param(2)) - exp(U_param(5))];
 else
-    g1 = -U_param(2);
+    g1 = -exp(U_param(2));
 end
 Re       = 4;
 epsilon = 10^(-2);

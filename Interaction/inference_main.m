@@ -14,16 +14,16 @@ addpath(([fileparts(pwd) '\Interaction']))
 df = dir(DataFolder);
 df = df(3:end);
 
-load([DataFolder '\' df(end-1).name])
+load([DataFolder '\' df(end-2).name])
 K     = length(observed_cells{end});
 freq  = observed_cells{end-1}(1);
 facit = observed_cells{end-1}(5:end-(length(observed_cells)-2));
 
-A = 1*feature('numcores');  % number of optimization agents
-Q = 10;
-T = 2;  % number of generations
+A = 2*feature('numcores');  % number of optimization agents
+Q = 5;
+T = 6*12;  % number of generations
 L = freq/12;
-S = 1;
+S = 12;
 agents   = cell(A,1);
 pot_type = 2;
 

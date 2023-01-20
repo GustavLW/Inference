@@ -16,7 +16,9 @@ o0   = 0;
 o1   = 0;
 save = 1;
 MCMC = 0;
-Z    = zeros(201);
+resolution = 401;
+Z    = zeros(resolution);
+priorize = 0;
 for d = length(df)-3:length(df)
     clc
     close all
@@ -93,64 +95,101 @@ for d = length(df)-3:length(df)
     elseif MCMC == 0
         rl0 = round(log(facit(1)));
         rl1 = round(log(facit(2)));
-        plot_range = 12;
-        l0linspace = linspace(rl0-plot_range,rl0+plot_range,201);
-        l1linspace = linspace(rl1-plot_range,rl1+plot_range,201);
+        plot_range = 3;
+        l0linspace = linspace(rl0-plot_range,rl0+plot_range,resolution);
+        l1linspace = linspace(rl1-plot_range,rl1+plot_range,resolution);
         [L0,L1] = meshgrid(l0linspace,l1linspace);
         %Z = L0;
+        if priorize == 0
+        Z   = zeros(resolution);
+        o0  = 0;
+        o1  = 0;
+        end
         for i = 1:size(L0,1)
             for j = 1:size(L1,1)
-                Z(i,j)       = likelihood_handler(rho,dbeta,D,dt,2,exp([L0(i,j) L1(i,j)]));
+                Z(i,j)       = Z(i,j) + likelihood_handler(rho,dbeta,D,dt,2,exp([L0(i,j) L1(i,j)]));
             end
         end
         [m1,i1] = max(Z);
-        [~,i2] = max(m1);
-        MLi = [i1(i2) i2];
-        ML  = [l0linspace(MLi(1)) l1linspace(MLi(2))];
+        [m2,i2] = max(m1);
+
+        best_loc_index = [i2 i1(i2)]; % x-koordinat y-koordinat
+        ML = [l0linspace(best_loc_index(1)) l1linspace(best_loc_index(2))];
         LAMBDA = likelihood_handler(rho,dbeta,D,dt,2,[facit(1) facit(2)]);
         MAMBDA = likelihood_handler(rho,dbeta,D,dt,2,exp(ML));
         log_it = 1;
         subplot(3,2,1:4)
         hold off
-        surf(L0,L1,repeated_sqrt(Z,log_it),'EdgeColor','none')
+        surf(L0,L1,Z,'EdgeColor','none')
         hold on
-        scatter3(log(facit(1)),log(facit(2)),repeated_sqrt(LAMBDA,log_it),'red','filled')
-        scatter3(ML(1),ML(2),repeated_sqrt(MAMBDA,log_it),'blue','filled')
-        xlabel('\lambda_0')
-        ylabel('\lambda_1')
-        xlim([rl0-plot_range/3 rl0+plot_range/3])
-        ylim([rl1-plot_range/3 rl1+plot_range/3])
+        scatter3(log(facit(1)),log(facit(2)),LAMBDA,'red','filled')
+        scatter3(ML(1),ML(2),MAMBDA,'blue','filled')
+        xlabel('log(\lambda_0)')
+        ylabel('log(\lambda_1)')
+        xlim([rl0-plot_range rl0+plot_range])
+        ylim([rl1-plot_range rl1+plot_range])
         view(0,90)
 
         subplot(3,2,5:6)
         o0 = o0 + sum(death_event_list(:,2));
         o1 = o1 + sum(death_event_list(:,1)-death_event_list(:,2));
         death_pdf = @(r) (o0-1)*log((1-exp(-dt*r))) - (o1-1)*dt*r;
-        r = linspace(facit(3)/9,3*facit(3),10001);
-        max_death = max(max(death_pdf(r)),10^100);
-        min_death = min(min(death_pdf(r)),10^100);
+                r = linspace(facit(3)/9,3*facit(3),10001);
+        max_death = min(max(death_pdf(r)),10^100);
+        min_death = max(min(death_pdf(r)),-10^100);
         plot(r,death_pdf(r),'k','LineWidth',1)
         hold on
-        plot(facit(3)*[1 1],[min_death 1.5*max_death],'r--','LineWidth',1)
+        plot(facit(3)*[1 1],[1.25*min_death 0.75*max_death],'r--','LineWidth',1)
         xlim([min(r) max(r)])
-        ylim([min_death*1.25 1.25*max_death])
+        ylim([1.05*min_death 0.95*max_death])
         xlabel('\omega')
         ylabel('p(\omega|X)')
         grid on
 
         if save == 1
-            figname = ['add_likelihood_' num2str(d)];
+            c = clock;
+            c1 = num2str(c(1)); % år
+            c2 = num2str(c(2)); % månad
+            tmp = length(c2);
+            if tmp == 1
+                c2 = strcat('0',c2);
+            end
+            c3 = num2str(c(3)); % dag
+            tmp = length(c3);
+            if tmp == 1
+                c3 = strcat('0',c3);
+            end
+            c4 = num2str(c(4)); % timme
+            tmp = length(c4);
+            if tmp == 1
+                c4 = strcat('0',c4);
+            end
+            c5 = num2str(c(5)); % sekund
+            tmp = length(c5);
+            if tmp == 1
+                c5 = strcat('0',c5);
+            end
+            figname  = strcat(c1,c2,c3,'_',c4,c5,'_likelihood');
+
             saveas(h,figname,'png');
-        end 
+        end
     end
 end
 
 %%
-death_pdf = @(r) (o0-1)*log((1-exp(-dt*r))) - (o1-1)*dt*r;
-r = linspace(facit(3)/9,3*facit(3),10001);
 
-plot(r,death_pdf(r),'k','LineWidth',1)
-
+        death_pdf = @(r) (o0-1)*log((1-exp(-dt*r))) - (o1-1)*dt*r;
+        r = linspace(facit(3)/9,3*facit(3),10001);
+        max_death = min(max(death_pdf(r)),10^100);
+        min_death = max(min(death_pdf(r)),-10^100);
+        max(death_pdf(r))
+        plot(r,death_pdf(r),'k','LineWidth',1)
+        hold on
+        plot(facit(3)*[1 1],[1.25*min_death 0.75*max_death],'r--','LineWidth',1)
+        xlim([min(r) max(r)])
+        ylim([1.05*min_death 0.95*max_death])
+        xlabel('\omega')
+        ylabel('p(\omega|X)')
 
 function Z = repeated_sqrt(Z,iterations)
 tmp = max(Z)-Z;

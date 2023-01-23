@@ -14,13 +14,13 @@ addpath(([fileparts(pwd) '\Interaction']))
 df = dir(DataFolder);
 df = df(3:end);
 
-load([DataFolder '\' df(end).name])
+load([DataFolder '\' df(end-2).name])
 K     = length(observed_cells{end});
 freq  = observed_cells{end-1}(1);
 facit = observed_cells{end-1}(5:end-(length(observed_cells)-2));
 
-A = 1*feature('numcores');  % number of optimization agents
-Q = 2;
+A = 2*feature('numcores');  % number of optimization agents
+Q = 2*A;
 T = 5;  % number of generations
 L = freq/12;
 S = 1;
@@ -47,7 +47,22 @@ for q = 1:Q
     repeated_trials{q,3} = best_ever_sigma;
     repeated_trials{q,4} = agents;
 end
-% todo: pick theA best repeated trials-results and run PSO again with those
+%%
+all_fit = zeros(1,Q);
+for q = 1:Q
+    all_fit(q) = repeated_trials{q,2}(end);
+end
+[bfit,bindex] = sort(all_fit);
+bindex = bindex(Q-A+1:Q);
+besties=zeros(A,2+(pot_type-1)*4);
+for a = 1:A
+besties(a,:) = repeated_trials{bindex(a),1}(end,:);
+end
+% todo: pick the A best repeated_trials-results and run PSO again with those
+% jag har nu extraherat bästa postionerna från våra Q startgissningar.
+% Nästa steg är att skapa EN partikelsvärm som börjar i exakt dessa
+% positioner. A<Q, och i "slutspelet" har vi de A bästa partiklarna från
+% Q-spelet som får vibe:a
 %% check RDF deviance for extremely high-fidelity simulation
 clc
 close all

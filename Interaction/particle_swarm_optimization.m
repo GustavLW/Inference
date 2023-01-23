@@ -6,8 +6,7 @@ inertia  = (1:A)./((1:A));
 
 for a = 1:A
     agents{a}          = create_agent(pot_type,T);
-    random_point       = rand_sphere_shell(length(facit),0.5);
-    agents{a}.U_param  = (s1(q,:) + random_point).*ones(T,length(facit));
+    agents{a}.U_param  = s1(a,:).*ones(T,length(facit));
 end
 best_ever_fitness  = -Inf*ones(T,1);
 best_ever_penalty  = zeros(T,1);
@@ -53,18 +52,4 @@ for t = 1:T-1
     end
     %disp(['Iteration ' num2str(t) '/' num2str(T) ' of trial ' num2str(q) '/' num2str(Q) '.'])
 end
-
-    function point = rand_sphere_shell(n,r_radii)
-        rang = [pi*rand(1,n-2) 2*pi*rand];
-        point    = ones(1,n);
-        point(2) = sin(rang(1));
-        point(end) = prod(sin(rang));
-        if n > 3
-            for i = 3:n-1
-                point(i) = point(i-1).*sin(rang(i-1));
-            end
-        end
-        point(1:end-1) = point(1:end-1).*(cos(rang(1:end)));
-        point = r_radii*point;
-    end
 end

@@ -14,14 +14,14 @@ addpath(([fileparts(pwd) '\Interaction']))
 df = dir(DataFolder);
 df = df(3:end);
 
-load([DataFolder '\' df(end-2).name])
+load([DataFolder '\' df(end).name])
 K     = length(observed_cells{end});
 freq  = observed_cells{end-1}(1);
-facit = observed_cells{end-1}(5:end-(length(observed_cells)-2));
+%facit = observed_cells{end-1}(5:end-(length(observed_cells)-2));
 
-A = 2*feature('numcores');  % number of optimization agents
-Q = 2*A;
-T = 5;  % number of generations
+A = 1*feature('numcores');  % number of optimization agents
+Q = 4;
+T = 2;  % number of generations
 L = freq/12;
 S = 1;
 pot_type = 2;
@@ -31,21 +31,35 @@ RD = calculate_radial_distribution(observed_cells,1);
 repeated_trials = cell(Q,4); % location evolution, fitness, sigma for best location, all agents for good measure
 
 try
-    para_ranges = log(facit') + 1*[-1 1; -1 1; -1 1; -1 1; -1 1; -1 1];
-    s1 = hyper_cube_sampling(Q,para_ranges);
+    facit = observed_cells{end-1}(5:end-(length(observed_cells)-2));
+    s1 = zeros(A,Q,length(facit));
+    for q = 1:Q
+        for a = 1:A
+            s1(a,q,:) = log(facit) +  rand_sphere_shell(length(facit),q/4);
+        end
+    end
 catch
     facit = ones(1,2 + (pot_type-1)*4);
     para_ranges = log(facit') + 1*[-1 1; -1 1; -1 1; -1 1; -1 1; -1 1];
-    s1 = hyper_cube_sampling(Q,para_ranges);
+    s0 = hyper_cube_sampling(Q,para_ranges);
+    s1 = zeros(A,Q,length(facit));
+    for q = 1:Q
+        for a = 1:A
+            s1(a,q,:) = s0(q,:) + rand_sphere_shell(length(facit),0.5);
+        end
+    end 
 end
 %%
+tic
 for q = 1:Q
     [best_ever_location,best_ever_fitness,best_ever_sigma,agents] =...
-    particle_swarm_optimization(q,A,pot_type,T,facit,s1,RD,observed_cells,L,S);
+    particle_swarm_optimization(q,A,pot_type,T,facit,squeeze(s1(:,q,:)),RD,observed_cells,L,S);
     repeated_trials{q,1} = best_ever_location;
     repeated_trials{q,2} = best_ever_fitness;
     repeated_trials{q,3} = best_ever_sigma;
     repeated_trials{q,4} = agents;
+    disp(['Repeated trial ' num2str(q) '/' num2str(Q) ' completed.'])
+    toc
 end
 %%
 all_fit = zeros(1,Q);
@@ -234,7 +248,19 @@ for t = 2:T
     end
 end
 
-
+ function point = rand_sphere_shell(n,r_radii)
+        rang = [pi*rand(1,n-2) 2*pi*rand];
+        point    = ones(1,n);
+        point(2) = sin(rang(1));
+        point(end) = prod(sin(rang));
+        if n > 3
+            for i = 3:n-1
+                point(i) = point(i-1).*sin(rang(i-1));
+            end
+        end
+        point(1:end-1) = point(1:end-1).*(cos(rang(1:end)));
+        point = r_radii*point;
+    end
 
 
 

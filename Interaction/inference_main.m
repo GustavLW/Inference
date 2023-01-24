@@ -19,11 +19,11 @@ K     = length(observed_cells{end});
 freq  = observed_cells{end-1}(1);
 %facit = observed_cells{end-1}(5:end-(length(observed_cells)-2));
 
-A = 1*feature('numcores');  % number of optimization agents
+A = 2*feature('numcores');  % number of optimization agents
 Q = 4;
-T = 2;  % number of generations
+T = 45;  % number of generations
 L = freq/12;
-S = 1;
+S = 12;
 pot_type = 2;
 
 RD = calculate_radial_distribution(observed_cells,1);
@@ -141,27 +141,34 @@ for k = 1:K-1
 end
 disp([dF dW])
 %% COMPARE WINNING POTENTIAL COMPARED TO UNDERLYING
+winner_distance = zeros(4,1);
 for q = 1:size(repeated_trials,1)
-    hold off
+    
     x       = linspace(0,5,1001);
     xs      = linspace(0,5,21);
     facit = observed_cells{end-1}(5:end-(length(observed_cells)-2));
-    B_param = (repeated_trials{q,1});
-    plot(xs,U_pot(xs,facit),'ro')
-    hold on
-    plot(xs+0.125,U_pot(xs+0.125,B_param),'bd')
-    plot(x,U_pot(x,facit),'r')
-    plot(x,U_pot(x,B_param),'b')
-    plot([0.5 4],[0 0],'k')
-    grid on
-    axis([0.5 4 min(U_pot(x,facit))*[1.25 -3]])
-    xlabel('Distance')
-    ylabel('Potential energy')
-    title('Winning potential compared to underlying')
-    legend('Underlying potential','Propsed by inference')
-    drawnow;
-    pause(1)
+    for t = 2:T
+        hold off
+        B_param = exp(repeated_trials{q,1}(t,:));
+        plot(xs,U_pot(xs,facit),'ro')
+        hold on
+        plot(xs+0.125,U_pot(xs+0.125,B_param),'bd')
+        plot(x,U_pot(x,facit),'r')
+        plot(x,U_pot(x,B_param),'b')
+        plot([0.5 4],[0 0],'k')
+        grid on
+        axis([0.5 4 min(U_pot(x,facit))*[1.25 -3]])
+        xlabel('Distance')
+        ylabel('Potential energy')
+        title('Winning potential compared to underlying')
+        legend('Underlying potential','Propsed by inference')
+        drawnow;
+    end
+    winner_distance(q) = norm(U_pot(x,facit)-U_pot(x,B_param));
 end
+%%
+plot((1:4)/4,winner_distance)
+
 %% GRAFIK FÖR ANIMERA LÖSNINGAR
 clc
 close all
@@ -224,7 +231,7 @@ for t = 2:T
         x       = linspace(0,5,1001);
         xs      = linspace(0,5,21);
         facit = observed_cells{end-1}(5:end-(length(observed_cells)-2));
-        B_param = (repeated_trials{q,1});
+        B_param = exp(repeated_trials{q,1}(t,:));
         plot(xs,U_pot(xs,facit),'ro')
         hold on
         plot(xs+0.125,U_pot(xs+0.125,B_param),'bd')

@@ -77,48 +77,7 @@ end
 % Nästa steg är att skapa EN partikelsvärm som börjar i exakt dessa
 % positioner. A<Q, och i "slutspelet" har vi de A bästa partiklarna från
 % Q-spelet som får vibe:a
-%% check RDF deviance for extremely high-fidelity simulation
-clc
-close all
-RD    = calculate_radial_distribution(observed_cells,1);
-freq  = observed_cells{end-1}(1);
-L     = freq;
-forecast_cells = observed_cells;
-U_param          = facit;
-[alpha,beta,~,~] = diffusion_inference(observed_cells,1,U_param);
-N                = (length(observed_cells)-2);
-for k = 1:K-1
-    pop_tmp      = unpack_image(observed_cells,k);
-    nei_tmp      = observed_cells{end}{k};
-    sigma        = sqrt(beta./alpha)';
-    pop_forecast = sample_from_next_state(pop_tmp,nei_tmp,U_param,sigma,freq,L);
-    F = interactions(pop_forecast,U_param,nei_tmp);
-    for i = 1:N
-        forecast_cells{i}.location(:,k+1) = pop_forecast(:,i) + (freq/L)*F(:,i) + sqrt(freq/L)*sigma(i)*[randn;randn];
-    end
-end
-%forecast_cells{end-1}(2:end-3-(length(observed_cells)-2)) = U_param;
-%forecast_cells{end-1}(end-N+1:end)                        = sigma;
-RDf = calculate_radial_distribution(forecast_cells,1);
 
-%%% PROPOSAL %%%
-q = 1;
-forecast_cells = observed_cells;
-B_param          = exp(repeated_trials{q,1});
-[alpha,beta,~,~] = diffusion_inference(observed_cells,1,B_param);
-sigmaB           = sqrt(beta./alpha)';
-N                = (length(observed_cells)-2);
-for k = 1:K-1
-    pop_tmp      = unpack_image(observed_cells,k);
-    nei_tmp      = observed_cells{end}{k};
-    
-    pop_forecast = sample_from_next_state(pop_tmp,nei_tmp,B_param,sigmaB,freq,L);
-    F = interactions(pop_forecast,B_param,nei_tmp);
-    for i = 1:N 
-        forecast_cells{i}.location(:,k+1) = pop_forecast(:,i) + (freq/L)*F(:,i) + sqrt(freq/L)*sigmaB(i)*[randn;randn];
-    end
-end
-RDw = calculate_radial_distribution(forecast_cells,1);
 %%
 dF = 0;
 dW = 0;
@@ -140,34 +99,7 @@ for k = 1:K-1
     pause(0.1)
 end
 disp([dF dW])
-%% COMPARE WINNING POTENTIAL COMPARED TO UNDERLYING
-winner_distance = zeros(4,1);
-for q = 1:size(repeated_trials,1)
-    
-    x       = linspace(0,5,1001);
-    xs      = linspace(0,5,21);
-    facit = observed_cells{end-1}(5:end-(length(observed_cells)-2));
-    for t = 2:T
-        hold off
-        B_param = exp(repeated_trials{q,1}(t,:));
-        plot(xs,U_pot(xs,facit),'ro')
-        hold on
-        plot(xs+0.125,U_pot(xs+0.125,B_param),'bd')
-        plot(x,U_pot(x,facit),'r')
-        plot(x,U_pot(x,B_param),'b')
-        plot([0.5 4],[0 0],'k')
-        grid on
-        axis([0.5 4 min(U_pot(x,facit))*[1.25 -3]])
-        xlabel('Distance')
-        ylabel('Potential energy')
-        title('Winning potential compared to underlying')
-        legend('Underlying potential','Propsed by inference')
-        drawnow;
-    end
-    winner_distance(q) = norm(U_pot(x,facit)-U_pot(x,B_param));
-end
-%%
-plot((1:4)/4,winner_distance)
+
 
 %% GRAFIK FÖR ANIMERA LÖSNINGAR
 clc
@@ -270,7 +202,48 @@ end
     end
 
 
-
+% %% check RDF deviance for extremely high-fidelity simulation
+% clc
+% close all
+% RD    = calculate_radial_distribution(observed_cells,1);
+% freq  = observed_cells{end-1}(1);
+% L     = freq;
+% forecast_cells = observed_cells;
+% U_param          = facit;
+% [alpha,beta,~,~] = diffusion_inference(observed_cells,1,U_param);
+% N                = (length(observed_cells)-2);
+% for k = 1:K-1
+%     pop_tmp      = unpack_image(observed_cells,k);
+%     nei_tmp      = observed_cells{end}{k};
+%     sigma        = sqrt(beta./alpha)';
+%     pop_forecast = sample_from_next_state(pop_tmp,nei_tmp,U_param,sigma,freq,L);
+%     F = interactions(pop_forecast,U_param,nei_tmp);
+%     for i = 1:N
+%         forecast_cells{i}.location(:,k+1) = pop_forecast(:,i) + (freq/L)*F(:,i) + sqrt(freq/L)*sigma(i)*[randn;randn];
+%     end
+% end
+% %forecast_cells{end-1}(2:end-3-(length(observed_cells)-2)) = U_param;
+% %forecast_cells{end-1}(end-N+1:end)                        = sigma;
+% RDf = calculate_radial_distribution(forecast_cells,1);
+% 
+% %%% PROPOSAL %%%
+% q = 1;
+% forecast_cells = observed_cells;
+% B_param          = exp(repeated_trials{q,1});
+% [alpha,beta,~,~] = diffusion_inference(observed_cells,1,B_param);
+% sigmaB           = sqrt(beta./alpha)';
+% N                = (length(observed_cells)-2);
+% for k = 1:K-1
+%     pop_tmp      = unpack_image(observed_cells,k);
+%     nei_tmp      = observed_cells{end}{k};
+%     
+%     pop_forecast = sample_from_next_state(pop_tmp,nei_tmp,B_param,sigmaB,freq,L);
+%     F = interactions(pop_forecast,B_param,nei_tmp);
+%     for i = 1:N 
+%         forecast_cells{i}.location(:,k+1) = pop_forecast(:,i) + (freq/L)*F(:,i) + sqrt(freq/L)*sigmaB(i)*[randn;randn];
+%     end
+% end
+% RDw = calculate_radial_distribution(forecast_cells,1);
 
 
 

@@ -1,7 +1,7 @@
 function [best_ever_location,best_ever_fitness,best_ever_sigma,agents] = particle_swarm_optimization(q,A,pot_type,T,facit,s1,RD,observed_cells,L,S)
 agents   = cell(A,1);
-sim_an1  = @(t) (1/3)*(1./(1+exp(2-3*t/T)));
-sim_an2  = @(t) (1/3)*(1./(1+exp(4-6*t/T)));
+sim_an1  = @(t) (1/3)*(1./(1+exp(2-7*t/T)));
+sim_an2  = @(t) (1/3)*(1./(1+exp(3-11*t/T)));
 inertia  = (1:A)./((1:A));
 
 for a = 1:A

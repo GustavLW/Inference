@@ -80,12 +80,44 @@ xticklabels([0 10 20 40])
 xlabel('\Delta t')
 ylabel('log(|u(r)-u(r;\theta|)')
 grid on
-
-
+%% PERFORMANCE OF FACIT POTENTIAL FOR DIFFERENT TIME DILATIONS.
+clc
+Q = 12;
+obs_array = cell(Q,2);
+for q = 1:Q
+obs_cop = observed_cells;
+        for i = 1:length(observed_cells)-2
+            obs_cop{i}.location = observed_cells{i}.location(:,q:q:end);
+        end
+        obs_cop{end-1}(1) = observed_cells{end-1}(1)*q;
+        obs_cop{end}      = observed_cells{end}(q:q:end);
+        obs_array{q,1}    = obs_cop;
+end
+%%
+scsc = zeros(Q,1);
+tic
+for q = 1:Q
+    agent = agents{1};
+    agent.U_param = log(facit);
+    S = 30;
+    L = obs_array{q,1}{end-1}(1)/12;
+    [agent,~] = score_agent(RD(q:q:end),agent,1,obs_array{q,1},L,S);
+    scsc(q) = agent.fitness(1);
+    disp(q)
+    toc
+end
+%%
+K_dt = floor(144./(1:12))';
+plot(K_dt,scsc./K_dt,'k')
+xlabel('Number of observations')
+ylabel('Score of underlying potential')
+axis([min(K_dt) max(K_dt) 0.5 4])
+grid on
+save('facit_score','scsc')
 %% GRAFIK FÖR ANIMERA LÖSNINGAR
 clc
 close all
-q = 2;
+q = 3;
 agents = repeated_trials{q,4};
 best_ever_location = repeated_trials{q,1};
 

@@ -13,47 +13,72 @@ addpath(([fileparts(pwd) '\Interaction']))
 
 df = dir(DataFolder);
 df = df(3:end);
-
 load([DataFolder '\' df(end).name])
 K     = length(observed_cells{end});
 freq  = observed_cells{end-1}(1);
-%facit = observed_cells{end-1}(5:end-(length(observed_cells)-2));
-
+time_dilate = 1;
 A = 2*feature('numcores');  % number of optimization agents
-Q = 4;
-T = 45;  % number of generations
-L = freq/12;
+Q = 3;
+
+T = 180;  % number of generations
 S = 12;
 pot_type = 2;
-
 RD = calculate_radial_distribution(observed_cells,1);
-
-repeated_trials = cell(Q,4); % location evolution, fitness, sigma for best location, all agents for good measure
-
-try
+obs_array = cell(Q,2);
+if time_dilate ==1
     facit = observed_cells{end-1}(5:end-(length(observed_cells)-2));
-    s1 = zeros(A,Q,length(facit));
     for q = 1:Q
+        obs_cop = observed_cells;
+        for i = 1:length(observed_cells)-2
+            obs_cop{i}.location = observed_cells{i}.location(:,2^(q-1):2^(q-1):end);
+        end
+        obs_cop{end-1}(1) = observed_cells{end-1}(1)*2^(q-1);
+        obs_cop{end}      = observed_cells{end}(2^(q-1):2^(q-1):end);
+        obs_array{q,1}    = obs_cop;
+        s1 = zeros(A,length(facit));
         for a = 1:A
-            s1(a,q,:) = log(facit) +  rand_sphere_shell(length(facit),q/4);
+            s1(a,:) = log(facit) +  rand_sphere_shell(length(facit),0.75);
+        end
+        obs_array{q,2} = s1;
+    end
+else
+    try
+        facit = observed_cells{end-1}(5:end-(length(observed_cells)-2));
+        s1 = zeros(A,Q,length(facit));
+        for q = 1:Q
+            for a = 1:A
+                s1(a,q,:) = log(facit) +  rand_sphere_shell(length(facit),q/4);
+            end
+            obs_array{q,1} = observed_cells;
+            obs_array{q,2} = squeeze(s1(:,q,:));
+        end
+    catch
+        facit = ones(1,2 + (pot_type-1)*4);
+        para_ranges = log(facit') + 1*[-1 1; -1 1; -1 1; -1 1; -1 1; -1 1];
+        s0 = hyper_cube_sampling(Q,para_ranges);
+        s1 = zeros(A,Q,length(facit));
+        for q = 1:Q
+            for a = 1:A
+                s1(a,q,:) = s0(q,:) + rand_sphere_shell(length(facit),0.5);
+            end
         end
     end
-catch
-    facit = ones(1,2 + (pot_type-1)*4);
-    para_ranges = log(facit') + 1*[-1 1; -1 1; -1 1; -1 1; -1 1; -1 1];
-    s0 = hyper_cube_sampling(Q,para_ranges);
-    s1 = zeros(A,Q,length(facit));
-    for q = 1:Q
-        for a = 1:A
-            s1(a,q,:) = s0(q,:) + rand_sphere_shell(length(facit),0.5);
-        end
-    end 
 end
+
+
+
+
+
+
+
+
+repeated_trials = cell(Q,4); % location evolution, fitness, sigma for best location, all agents for good measure
 %%
+clc
 tic
 for q = 1:Q
     [best_ever_location,best_ever_fitness,best_ever_sigma,agents] =...
-    particle_swarm_optimization(q,A,pot_type,T,facit,squeeze(s1(:,q,:)),RD,observed_cells,L,S);
+    particle_swarm_optimization(q,A,pot_type,T,facit,obs_array{q,2},RD,obs_array{q,1},obs_array{q,1}{end-1}(1)/12,S);
     repeated_trials{q,1} = best_ever_location;
     repeated_trials{q,2} = best_ever_fitness;
     repeated_trials{q,3} = best_ever_sigma;
@@ -61,62 +86,62 @@ for q = 1:Q
     disp(['Repeated trial ' num2str(q) '/' num2str(Q) ' completed.'])
     toc
 end
-%%
-all_fit = zeros(1,Q);
-for q = 1:Q
-    all_fit(q) = repeated_trials{q,2}(end);
-end
-[bfit,bindex] = sort(all_fit);
-bindex = bindex(Q-A+1:Q);
-besties=zeros(A,2+(pot_type-1)*4);
-for a = 1:A
-besties(a,:) = repeated_trials{bindex(a),1}(end,:);
-end
-% todo: pick the A best repeated_trials-results and run PSO again with those
-% jag har nu extraherat bästa postionerna från våra Q startgissningar.
-% Nästa steg är att skapa EN partikelsvärm som börjar i exakt dessa
-% positioner. A<Q, och i "slutspelet" har vi de A bästa partiklarna från
-% Q-spelet som får vibe:a
-
-%%
-dF = 0;
-dW = 0;
-close all
-for k = 1:K-1
-    r  = RD{k};
-    rF = RDf{k};
-    rW = RDw{k};
-    dF = dF + norm(r(:,2)-rF(:,2));
-    dW = dW + norm(r(:,2)-rW(:,2));
-    hold off
-    plot(rF(:,1),rF(:,2),'r','LineWidth',1.5)
-    hold on
-    plot(rW(:,1),rW(:,2),'b','LineWidth',1.5)
-    plot(r(:,1),r(:,2),'k--','LineWidth',1)
-    axis([0 5 0 1.5*max(r(:,2))])
-    legend('Facit','Proposed','Data')
-    drawnow;
-    pause(0.1)
-end
-disp([dF dW])
 
 
 
 
- function point = rand_sphere_shell(n,r_radii)
-        rang = [pi*rand(1,n-2) 2*pi*rand];
-        point    = ones(1,n);
-        point(2) = sin(rang(1));
-        point(end) = prod(sin(rang));
-        if n > 3
-            for i = 3:n-1
-                point(i) = point(i-1).*sin(rang(i-1));
-            end
-        end
-        point(1:end-1) = point(1:end-1).*(cos(rang(1:end)));
-        point = r_radii*point;
+
+function point = rand_sphere_shell(n,r_radii)
+rang = [pi*rand(1,n-2) 2*pi*rand];
+point    = ones(1,n);
+point(2) = sin(rang(1));
+point(end) = prod(sin(rang));
+if n > 3
+    for i = 3:n-1
+        point(i) = point(i-1).*sin(rang(i-1));
     end
+end
+point(1:end-1) = point(1:end-1).*(cos(rang(1:end)));
+point = r_radii*point;
+end
 
+% all_fit = zeros(1,Q);
+% for q = 1:Q
+%     all_fit(q) = repeated_trials{q,2}(end);
+% end
+% [bfit,bindex] = sort(all_fit);
+% bindex = bindex(Q-A+1:Q);
+% besties=zeros(A,2+(pot_type-1)*4);
+% for a = 1:A
+% besties(a,:) = repeated_trials{bindex(a),1}(end,:);
+% end
+% % todo: pick the A best repeated_trials-results and run PSO again with those
+% % jag har nu extraherat bästa postionerna från våra Q startgissningar.
+% % Nästa steg är att skapa EN partikelsvärm som börjar i exakt dessa
+% % positioner. A<Q, och i "slutspelet" har vi de A bästa partiklarna från
+% % Q-spelet som får vibe:a
+% 
+% %%
+% dF = 0;
+% dW = 0;
+% close all
+% for k = 1:K-1
+%     r  = RD{k};
+%     rF = RDf{k};
+%     rW = RDw{k};
+%     dF = dF + norm(r(:,2)-rF(:,2));
+%     dW = dW + norm(r(:,2)-rW(:,2));
+%     hold off
+%     plot(rF(:,1),rF(:,2),'r','LineWidth',1.5)
+%     hold on
+%     plot(rW(:,1),rW(:,2),'b','LineWidth',1.5)
+%     plot(r(:,1),r(:,2),'k--','LineWidth',1)
+%     axis([0 5 0 1.5*max(r(:,2))])
+%     legend('Facit','Proposed','Data')
+%     drawnow;
+%     pause(0.1)
+% end
+% disp([dF dW])
 
 % %% check RDF deviance for extremely high-fidelity simulation
 % clc
